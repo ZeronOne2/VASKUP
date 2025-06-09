@@ -1,0 +1,48 @@
+# Streamlit and UI
+streamlit>=1.28.0
+streamlit-extras>=0.3.0
+
+# Data processing
+pandas>=2.0.0
+openpyxl>=3.1.0
+python-docx>=0.8.11
+
+# Web scraping and HTTP
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+selenium>=4.15.0
+
+# Text processing and NLP
+regex>=2023.8.8
+python-Levenshtein>=0.21.1
+
+# Vector store and embeddings
+chromadb>=0.4.18
+sentence-transformers>=2.2.2
+
+# LangChain ecosystem
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-community>=0.0.10
+langchain-core>=0.1.0
+langgraph>=0.0.20
+
+# Pydantic for data validation
+pydantic>=2.5.0
+
+# Environment and configuration
+python-dotenv>=1.0.0
+
+# Async support
+asyncio-throttle>=1.0.2
+
+# Date handling
+python-dateutil>=2.8.2
+
+# HTTP client
+httpx>=0.25.0
+
+# BM25 search
+rank-bm25>=0.2.2
+sentence-transformers>=2.2.2 

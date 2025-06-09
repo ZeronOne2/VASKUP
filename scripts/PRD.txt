@@ -1,0 +1,707 @@
+# 특허 분석 RAG 시스템 PRD
+
+# Overview  
+특허담당자를 위한 지능형 특허 분석 시스템입니다. 사용자가 특허번호가 포함된 엑셀 파일을 업로드하면, 각 특허의 상세정보를 자동으로 검색하고 수집하여 벡터스토어에 저장합니다. 이후 사용자가 정의한 질문들을 각 특허에 대해 자동으로 수행하고, 그 결과를 엑셀 파일에 새로운 열로 추가하여 제공합니다. 이를 통해 대량의 특허를 효율적으로 분석하고 비교할 수 있는 도구를 제공합니다.
+
+# Core Features  
+## 1. 엑셀 파일 업로드 및 처리
+- 특허번호가 포함된 엑셀 파일 업로드 기능
+- 다양한 엑셀 형식 지원 (.xlsx, .xls, .csv)
+- 특허번호 컬럼 자동 감지 또는 사용자 선택
+- 업로드된 데이터 미리보기 및 검증
+
+## 2. 특허 정보 자동 검색 및 수집
+- Google SERP API를 활용한 기본 특허 정보 검색
+- 특허번호(예: US11734097B1)를 patent_id 형식(patent/US11734097B1/en)으로 변환
+- 특허 제목, 요약, 청구항 자동 추출
+- **Description 별도 처리**:
+  - SERP API 응답의 `description_link` 추출
+  - 링크로 웹 스크래핑하여 상세설명 수집
+  - `<span class="google-src-text">` 원본 텍스트 제외, 영어 번역본 파싱
+  - 긴 description을 청크 단위로 분할하여 벡터스토어 저장
+- 검색 진행률 표시 및 에러 처리
+- API 호출 제한 관리 및 재시도 로직
+
+## 3. 데이터 저장 및 관리
+- 수집된 특허 정보를 구조화된 파일로 저장
+- 각 특허별 개별 파일 생성 및 관리
+- 데이터 중복 제거 및 업데이트 기능
+- 저장된 특허 목록 및 상태 관리
+
+## 4. 벡터스토어 구축
+- **특허 문서 청킹 전략**:
+  - 제목, 요약, 청구항: 개별 청크로 저장
+  - Description: 길이에 따라 적절한 크기로 분할 (1000-1500 토큰 단위)
+  - 청크 간 overlap 설정으로 문맥 유지
+- 임베딩 생성 및 벡터스토어 저장
+- Chroma 또는 FAISS 벡터 데이터베이스 활용
+- 특허별/섹션별 메타데이터 태깅
+- 검색 성능 최적화
+
+## 5. 질문 관리 시스템
+- 사용자 정의 질문 리스트 생성 및 관리
+- 질문 템플릿 제공 (특허 강도, 기술 분야, 침해 가능성 등)
+- 질문 수정, 삭제, 순서 변경 기능
+- 질문 세트 저장 및 불러오기
+
+## 6. Advanced Agentic Modular RAG 시스템
+- **LangGraph 기반 지능형 워크플로우**:
+  - 사용자 질문 분석 및 의도 파악
+  - 답변 전략 계획 수립 (Planning Agent)
+  - 적합한 검색 쿼리 생성 (Query Generation Agent)
+  - 다단계 검색 및 정보 수집 (Retrieval Agent)
+  - 답변 생성 및 품질 검증 (Generation & Validation Agent)
+  - 답변 부족 시 재검색 및 재생성 (Adaptive Loop)
+- **모듈화된 Agent 구조**:
+  - Query Analyzer: 질문 분류 및 복잡도 분석
+  - Planning Agent: 답변 전략 및 검색 계획 수립
+  - Retrieval Agent: 벡터 검색 및 문서 필터링
+  - Synthesis Agent: 정보 통합 및 답변 구성
+  - Validation Agent: 답변 품질 검증 및 완성도 평가
+- 각 특허에 대한 개별 질문 수행
+- 맥락을 고려한 정확한 답변 생성
+- 답변 신뢰도 및 근거 제시
+
+## 7. 결과 출력 및 투명한 분석 과정 제공
+- **엑셀 결과 출력**:
+  - 원본 엑셀에 질문별 답변 열 추가
+  - **새로운 "분석과정" 열**: 각 답변의 상세 분석 과정 링크
+- **HTML 분석 리포트 시스템**:
+  - 각 질문-답변별 개별 HTML 리포트 파일 생성
+  - 엑셀에 HTML 리포트 링크 열 추가
+  - 클릭 한 번으로 상세 분석 과정 확인
+- **분석 과정 시각화**:
+  - Agent 워크플로우 다이어그램
+  - 단계별 추론 과정 타임라인
+  - 검색된 문서 소스 및 신뢰도
+  - 재시도 과정 및 개선 내역
+- 결과 파일 다운로드 기능
+- 요약 리포트 생성
+- 진행 상황 실시간 모니터링
+
+# User Experience  
+## 사용자 페르소나
+**주요 사용자**: 특허담당자, IP 분석가, 연구개발팀
+- 대량의 특허 분석 업무 담당
+- 특허 침해 분석, 기술 동향 파악 필요
+- 효율적인 특허 비교 분석 도구 요구
+
+## 주요 사용자 플로우
+1. **데이터 준비**: 특허번호가 포함된 엑셀 파일 준비
+2. **파일 업로드**: Streamlit 인터페이스를 통한 파일 업로드
+3. **데이터 검증**: 업로드된 특허번호 목록 확인
+4. **특허 수집**: 자동 특허 정보 검색 및 수집 과정 모니터링
+5. **질문 설정**: 분석하고자 하는 질문들 입력 및 관리
+6. **분석 실행**: RAG 시스템을 통한 특허별 질문 수행
+7. **결과 확인**: 생성된 답변 검토 및 결과 파일 다운로드
+
+## UI/UX 고려사항
+- 직관적인 단계별 워크플로우 제공
+- 진행 상황을 명확히 보여주는 프로그레스 바
+- 에러 발생 시 명확한 안내 메시지
+- 모바일 반응형 디자인 (태블릿 지원)
+
+# Technical Architecture  
+## 시스템 구성요소
+### Frontend
+- **Streamlit**: 메인 웹 인터페이스
+- **Streamlit Components**: 커스텀 UI 컴포넌트
+
+### Backend
+- **Python**: 메인 백엔드 로직
+- **LangGraph**: Advanced Agentic RAG 워크플로우 오케스트레이션
+- **LangChain**: 기본 RAG 컴포넌트 및 도구 통합
+- **Agent Framework**: 모듈화된 AI Agent 구조
+
+### 데이터 처리
+- **Pandas**: 엑셀 파일 처리 및 데이터 조작
+- **SerpAPI**: Google Patents 기본 데이터 검색
+- **Requests/BeautifulSoup**: Description 링크 웹 스크래핑
+- **OpenAI/HuggingFace**: 텍스트 임베딩 생성
+
+### 벡터 데이터베이스
+- **Chroma**: 벡터스토어 (1차 선택)
+- **FAISS**: 대안 벡터스토어
+
+### 파일 시스템
+- **로컬 스토리지**: 특허 문서 및 설정 저장
+- **임시 파일 관리**: 업로드/다운로드 파일 처리
+
+## 데이터 모델
+```python
+# 특허 정보 구조
+Patent = {
+    "patent_number": str,           # 원본 특허번호 (예: US11734097B1)
+    "patent_id": str,              # SERP API 형식 (예: patent/US11734097B1/en)
+    "title": str,
+    "abstract": str,
+    "claims": List[str],
+    "description": str,            # 웹 스크래핑으로 수집된 영어 번역본
+    "description_link": str,       # SERP API에서 제공되는 description 링크
+    "description_chunks": List[str], # 청킹된 description 조각들
+    "filing_date": str,
+    "publication_date": str,
+    "status": str,
+    "serp_metadata": dict          # SERP API 응답의 추가 메타데이터
+}
+
+# patent_id 변환 함수
+def format_patent_id(patent_number: str) -> str:
+    return f"patent/{patent_number}/en"
+
+# Description 파싱 함수
+def parse_description(html_content: str) -> str:
+    """HTML에서 영어 번역본 추출, 원본 텍스트 제외"""
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # <span class="google-src-text"> 원본 텍스트 제거
+    for span in soup.find_all('span', class_='google-src-text'):
+        span.decompose()
+    
+    return soup.get_text().strip()
+
+# 청킹 구조
+DocumentChunk = {
+    "patent_number": str,
+    "section": str,               # "title", "abstract", "claims", "description"
+    "chunk_index": int,           # description의 경우 청크 순서
+    "content": str,
+    "metadata": dict
+}
+
+# Advanced RAG 워크플로우 상태
+RAGState = {
+    "original_question": str,
+    "analyzed_query": dict,         # 분석된 질문 정보
+    "search_plan": dict,           # 검색 계획
+    "generated_queries": List[str], # 생성된 검색 쿼리들
+    "retrieved_docs": List[dict],   # 검색된 문서들
+    "answer": str,                 # 생성된 답변
+    "confidence": float,           # 답변 신뢰도
+    "validation_result": dict,     # 답변 검증 결과
+    "iteration_count": int,        # 재시도 횟수
+    "sources": List[str],          # 참조 소스
+    "reasoning_trace": List[str]   # 추론 과정 추적
+}
+
+# Agent 결과 구조
+AgentResult = {
+    "agent_type": str,            # "analyzer", "planner", "retriever", etc.
+    "status": str,                # "success", "retry", "failed"
+    "output": dict,               # Agent별 출력
+    "next_action": str,           # 다음 액션 제안
+    "metadata": dict
+}
+
+# 최종 질문-답변 구조
+QA_Result = {
+    "question": str,
+    "answer": str,
+    "confidence": float,
+    "sources": List[str],
+    "reasoning_steps": List[str],     # 추론 단계들
+    "agent_workflow": List[dict],     # 사용된 Agent 워크플로우
+    "search_queries_used": List[str], # 실제 사용된 검색 쿼리들
+    "retrieval_chunks": List[dict],   # 검색된 문서 청크들
+    "analysis_report_link": str,      # 상세 분석 과정 링크
+    "transparency_data": dict         # 투명성을 위한 상세 데이터
+}
+
+# 투명성 리포트 구조
+TransparencyReport = {
+    "patent_number": str,
+    "question": str,
+    "timestamp": str,
+    "total_processing_time": float,
+    "agent_execution_log": List[dict],  # 각 Agent 실행 기록
+    "workflow_diagram": str,            # 워크플로우 다이어그램 경로
+    "decision_points": List[dict],      # 주요 의사결정 지점들
+    "search_results_detail": List[dict], # 검색 결과 상세 정보
+    "retry_history": List[dict],        # 재시도 내역
+    "quality_metrics": dict,            # 품질 평가 지표
+    "html_report_path": str             # HTML 리포트 파일 경로
+}
+```
+
+## API 및 통합
+- **SerpAPI Google Patents**: 주요 특허 데이터 소스
+  - Engine: "google_patents_details"
+  - Patent ID 형식: "patent/{patent_number}/en"
+  - API 키 관리 및 호출 제한 준수
+- **OpenAI API** 또는 **로컬 LLM 모델**: 임베딩 및 RAG 시스템
+- **백업 데이터 소스**: 필요 시 추가 특허 데이터베이스 연동
+
+## 인프라 요구사항
+- Python 3.9+
+- 최소 8GB RAM (대량 처리 시 16GB 권장)
+- SSD 스토리지 (벡터스토어 성능)
+- 인터넷 연결 (특허 정보 검색)
+
+# Development Roadmap  
+## Phase 1: MVP - 기본 기능 구현
+### 1.1 프로젝트 초기 설정
+- Streamlit 앱 기본 구조 생성
+- 필요한 라이브러리 설치 및 설정
+- 기본 UI 레이아웃 구성
+
+### 1.2 파일 업로드 시스템
+- 엑셀 파일 업로드 기능
+- 특허번호 컬럼 감지 및 선택
+- 데이터 미리보기 기능
+
+### 1.3 기본 특허 검색
+- 단일 특허번호 검색 기능
+- SerpAPI Google Patents 연동
+- 특허번호를 patent_id 형식으로 변환 로직
+- 기본 특허 정보 추출 (제목, 요약, 청구항)
+- Description 링크 추출 및 별도 스크래핑 로직
+
+### 1.4 기본 Agentic RAG 프로토타입
+- 단순화된 LangGraph 워크플로우 구현
+- 기본 Agent 노드들 (Analyzer → Retriever → Generator)
+- 고정된 질문에 대한 답변 생성
+- 결과 텍스트 출력 및 추론 과정 표시
+
+## Phase 2: 핵심 기능 완성
+### 2.1 대량 특허 처리
+- 배치 처리 시스템 구현
+- **2단계 데이터 수집**:
+  - 1단계: SERP API로 기본 정보 + description_link 수집
+  - 2단계: Description 링크 웹 스크래핑
+- 진행률 표시 및 에러 처리
+- 멀티스레딩 최적화 (웹 스크래핑 병렬 처리)
+
+### 2.2 벡터스토어 구축
+- Chroma 벡터 데이터베이스 연동
+- **지능형 문서 청킹**:
+  - Description 텍스트 길이 분석
+  - 적절한 청크 크기 자동 결정
+  - 청크 간 overlap 설정으로 문맥 보존
+- 임베딩 생성 및 메타데이터 태깅
+- 검색 성능 최적화
+
+### 2.3 질문 관리 시스템
+- 사용자 정의 질문 입력
+- 질문 리스트 관리 UI
+- 질문 템플릿 제공
+
+### 2.4 결과 엑셀 출력 및 투명성 구현
+- **엑셀 출력 개선**:
+  - 원본 파일에 답변 열 추가
+  - **"분석과정" 열 추가**: 각 답변의 상세 분석 링크
+  - 신뢰도 점수 및 소스 개수 표시
+- **HTML 분석 리포트 생성**:
+  - 각 질문-답변별 개별 HTML 파일 생성
+  - Agent 워크플로우 시각화 (SVG 다이어그램)
+  - 단계별 추론 과정 표시
+  - 클릭 가능한 소스 링크 제공
+- 파일 다운로드 기능
+- 기본 포맷팅 적용
+
+## Phase 3: 고급 기능 및 최적화
+### 3.1 Advanced Agentic RAG 완성
+- **완전한 LangGraph 워크플로우 구현**:
+  - Query Analysis Node: 질문 분석 및 분류
+  - Planning Node: 답변 전략 수립
+  - Query Generation Node: 최적 검색 쿼리 생성
+  - Retrieval Node: 다중 검색 전략 실행
+  - Synthesis Node: 정보 통합 및 답변 구성
+  - Validation Node: 답변 품질 검증
+  - Adaptive Loop: 품질 부족 시 재시도
+- **조건부 라우팅**:
+  - 질문 복잡도에 따른 워크플로우 분기
+  - 답변 품질에 따른 재시도 로직
+- **상태 관리**: 전체 추론 과정 추적
+- **Agent 간 협업**: 모듈화된 전문 Agent들
+
+### 3.2 고급 분석 기능
+- 특허 간 유사도 분석
+- 기술 분야별 그룹핑
+- 트렌드 분석 대시보드
+
+### 3.3 성능 최적화
+- 캐싱 시스템 구현
+- 메모리 사용량 최적화
+- 대용량 파일 처리 개선
+
+### 3.4 사용자 경험 개선
+- 고급 UI 컴포넌트
+- 실시간 알림 시스템
+- 에러 복구 기능
+
+## Phase 4: 확장 기능
+### 4.1 고급 HTML 리포트 및 시각화
+- **고급 HTML 분석 리포트**:
+  - 인터랙티브 워크플로우 다이어그램
+  - Agent 성능 분석 차트 (SVG/Chart.js)
+  - 질문 복잡도별 처리 시간 분석
+- **HTML 리포트 고도화**:
+  - 반응형 디자인 (모바일/태블릿 지원)
+  - 검색 결과 관련성 히트맵
+  - 단계별 애니메이션 효과
+- **템플릿 시스템 개선**:
+  - 커스터마이징 가능한 HTML 템플릿
+  - 브랜딩 및 스타일 옵션
+  - 다크/라이트 테마 지원
+
+### 4.2 협업 기능
+- 프로젝트 저장/불러오기
+- 결과 공유 기능
+- 히스토리 관리
+
+### 4.3 고급 분석
+- AI 기반 특허 요약
+- 침해 위험도 분석
+- 경쟁사 분석
+
+# Logical Dependency Chain
+## 기반 구조 (우선순위 1)
+1. **Streamlit 앱 기본 구조** → 모든 기능의 기반
+2. **파일 업로드 시스템** → 데이터 입력의 시작점
+3. **특허 API 연동** → 핵심 데이터 소스
+
+## 핵심 데이터 플로우 (우선순위 2)
+4. **단일 특허 검색** → 배치 처리의 기반
+5. **데이터 저장 시스템** → 후속 처리를 위한 필수
+6. **기본 벡터스토어** → RAG 시스템의 전제조건
+
+## 사용자 상호작용 (우선순위 3)
+7. **질문 입력 시스템** → 사용자 니즈 반영
+8. **기본 RAG 파이프라인** → 핵심 기능 구현
+9. **결과 출력 시스템** → 사용자 가치 제공
+
+## 성능 및 확장성 (우선순위 4)
+10. **배치 처리** → 실용적 사용을 위한 필수
+11. **Advanced Agentic RAG** → 지능형 질문 응답 능력
+12. **Agent 최적화** → 응답 시간 및 정확도 향상
+13. **UI/UX 개선** → 사용자 만족도 향상
+
+# Risks and Mitigations  
+## 기술적 도전과제
+### SerpAPI 의존성 및 비용 관리
+- **위험**: SerpAPI 호출 제한, 비용 증가, 서비스 중단
+- **완화**: API 호출 최적화, 캐싱 전략, 에러 처리 및 재시도 로직, 비용 모니터링
+
+### 대용량 데이터 처리 성능
+- **위험**: 메모리 부족, 처리 시간 초과, 웹 스크래핑 병목
+- **완화**: 청크 단위 처리, 스트리밍 파이프라인, 진행률 모니터링, 병렬 스크래핑
+
+### Advanced RAG 시스템 복잡성
+- **위험**: Agent 간 협업 실패, 무한 루프, 답변 품질 저하, 응답 시간 증가
+- **완화**: 강건한 상태 관리, 최대 재시도 제한, 각 Agent별 품질 검증, 점진적 답변 개선
+
+## MVP 범위 정의
+### 핵심 기능에 집중
+- 기본적인 특허 검색 및 질문-답변만 우선 구현
+- 고급 분석 기능은 후 단계로 연기
+- 사용자 피드백을 통한 점진적 개선
+
+### 확장 가능한 아키텍처 설계
+- 모듈화된 구조로 기능 추가 용이성 확보
+- 설정 파일을 통한 유연한 시스템 구성
+- 플러그인 방식의 기능 확장 지원
+
+## 리소스 제약 관리
+### 개발 우선순위 명확화
+- 사용자 가치가 높은 기능 우선 개발
+- 기술적 복잡도와 비즈니스 가치의 균형
+- 빠른 프로토타입을 통한 검증
+
+### 외부 의존성 최소화
+- 오픈소스 라이브러리 활용
+- 로컬 실행 가능한 구조 설계
+- 클라우드 서비스 의존도 최소화
+
+# Appendix  
+## 기술 스택 상세
+- **Frontend**: Streamlit 1.28+
+- **Backend**: Python 3.9+, FastAPI (선택적)
+- **AI/ML**: LangChain 0.0.350+, LangGraph 0.0.40+
+- **Vector DB**: Chroma 0.4.15+
+- **Data Processing**: Pandas 2.0+, NumPy 1.24+
+- **Patent Search**: google-search-results-python (SerpAPI) 2.4+
+- **Web Scraping**: requests 2.31+, beautifulsoup4 4.12+
+- **Text Processing**: tiktoken 0.5+ (토큰 계산), langchain-text-splitters 0.0.1+
+- **HTML Generation**: jinja2 3.1+ (템플릿 엔진), weasyprint 59+ (PDF 변환 옵션)
+- **Visualization**: matplotlib 3.7+, plotly 5.17+ (차트 생성)
+- **File Handling**: openpyxl 3.1+, xlsxwriter 3.1+
+- **Environment**: python-dotenv 1.0+ (API 키 관리)
+
+## 예상 프로젝트 구조
+```
+patent-rag-system/
+├── streamlit_app.py          # 메인 Streamlit 앱
+├── requirements.txt          # 의존성 목록
+├── config/
+│   ├── settings.py          # 시스템 설정
+│   └── prompts.py           # LLM 프롬프트 템플릿
+├── src/
+│   ├── patent_search/       # SerpAPI 특허 검색 모듈
+│   │   ├── serp_client.py   # SerpAPI 클라이언트
+│   │   ├── description_scraper.py # Description 웹 스크래핑
+│   │   └── patent_parser.py # 특허 데이터 파싱 및 청킹
+│   ├── vector_store/        # 벡터스토어 관리
+│   ├── agentic_rag/         # Advanced Agentic RAG 시스템
+│   │   ├── agents/          # 개별 Agent 모듈들
+│   │   │   ├── query_analyzer.py  # 질문 분석 Agent
+│   │   │   ├── planner.py         # 답변 계획 Agent
+│   │   │   ├── query_generator.py # 쿼리 생성 Agent
+│   │   │   ├── retriever.py       # 검색 Agent
+│   │   │   ├── synthesizer.py     # 답변 합성 Agent
+│   │   │   └── validator.py       # 검증 Agent
+│   │   ├── workflows/       # LangGraph 워크플로우
+│   │   │   ├── rag_graph.py       # 메인 RAG 그래프
+│   │   │   └── conditional_edges.py # 조건부 라우팅
+│   │   ├── state/           # 상태 관리
+│   │   └── utils/           # 유틸리티 함수들
+│   ├── transparency/        # HTML 리포트 시스템
+│   │   ├── html_generator.py      # HTML 리포트 생성
+│   │   ├── workflow_visualizer.py # 워크플로우 시각화
+│   │   └── templates/             # HTML 템플릿들
+│   └── file_handler/        # 파일 처리 유틸리티
+├── data/
+│   ├── patents/             # 수집된 특허 데이터
+│   ├── vector_db/           # 벡터 데이터베이스
+│   ├── reports/             # 생성된 분석 리포트들
+│   │   ├── html/            # HTML 분석 리포트
+│   │   └── excel/           # 결과 엑셀 파일들
+│   └── temp/                # 임시 파일
+└── tests/                   # 테스트 파일
+```
+
+## 참고 자료
+- **SerpAPI Google Patents Documentation**: https://serpapi.com/google-patents-api
+- **SerpAPI Python Client**: https://github.com/serpapi/google-search-results-python
+- **LangChain RAG 튜토리얼**: https://docs.langchain.com/docs/use-cases/question-answering
+- **Streamlit 고급 기능 가이드**: https://docs.streamlit.io/
+- **특허 데이터 분석 모범 사례**
+
+## SerpAPI 사용 예시
+```python
+from serpapi import GoogleSearch
+import requests
+from bs4 import BeautifulSoup
+import os
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# API 키 설정
+SERPAPI_KEY = os.getenv("SERPAPI_API_KEY")
+
+def search_patent(patent_number: str):
+    """특허번호로 특허 기본 정보 검색"""
+    patent_id = f"patent/{patent_number}/en"
+    
+    params = {
+        "engine": "google_patents_details",
+        "patent_id": patent_id,
+        "api_key": SERPAPI_KEY
+    }
+    
+    search = GoogleSearch(params)
+    results = search.get_dict()
+    
+    return results
+
+def scrape_description(description_link: str) -> str:
+    """Description 링크에서 영어 번역본 스크래핑"""
+    response = requests.get(description_link)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    
+    # <span class="google-src-text"> 원본 텍스트 제거
+    for span in soup.find_all('span', class_='google-src-text'):
+        span.decompose()
+    
+    return soup.get_text().strip()
+
+def chunk_description(description: str, chunk_size: int = 1000) -> List[str]:
+    """Description을 적절한 크기로 청킹"""
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=200,
+        length_function=len,
+    )
+    chunks = text_splitter.split_text(description)
+    return chunks
+
+# 사용 예시
+patent_data = search_patent("US11734097B1")
+description_link = patent_data.get("description_link")
+if description_link:
+    description = scrape_description(description_link)
+    description_chunks = chunk_description(description)
+
+# Advanced Agentic RAG 워크플로우 예시
+from langgraph.graph import StateGraph, END
+from typing import TypedDict
+
+class RAGState(TypedDict):
+    original_question: str
+    analyzed_query: dict
+    search_plan: dict
+    generated_queries: list
+    retrieved_docs: list
+    answer: str
+    confidence: float
+    iteration_count: int
+
+def analyze_query(state: RAGState) -> RAGState:
+    """질문 분석 Agent"""
+    question = state["original_question"]
+    # 질문 복잡도, 의도, 필요한 정보 유형 분석
+    analyzed = {
+        "intent": "patent_analysis",
+        "complexity": "medium",
+        "required_sections": ["claims", "description"],
+        "question_type": "comparison"
+    }
+    state["analyzed_query"] = analyzed
+    return state
+
+def plan_search(state: RAGState) -> RAGState:
+    """검색 계획 Agent"""
+    analysis = state["analyzed_query"]
+    plan = {
+        "search_strategy": "multi_step",
+        "target_sections": analysis["required_sections"],
+        "query_count": 2,
+        "search_depth": "comprehensive"
+    }
+    state["search_plan"] = plan
+    return state
+
+def generate_queries(state: RAGState) -> RAGState:
+    """쿼리 생성 Agent"""
+    plan = state["search_plan"]
+    queries = [
+        "patent claims analysis",
+        "detailed technical description"
+    ]
+    state["generated_queries"] = queries
+    return state
+
+# LangGraph 워크플로우 구성
+def create_rag_workflow():
+    workflow = StateGraph(RAGState)
+    
+    workflow.add_node("analyzer", analyze_query)
+    workflow.add_node("planner", plan_search)
+    workflow.add_node("query_generator", generate_queries)
+    workflow.add_node("retriever", retrieve_documents)
+    workflow.add_node("synthesizer", synthesize_answer)
+    workflow.add_node("validator", validate_answer)
+    
+    workflow.set_entry_point("analyzer")
+    workflow.add_edge("analyzer", "planner")
+    workflow.add_edge("planner", "query_generator")
+    workflow.add_edge("query_generator", "retriever")
+    workflow.add_edge("retriever", "synthesizer")
+    workflow.add_edge("synthesizer", "validator")
+    
+    # 조건부 라우팅: 답변 품질에 따라 재시도 또는 완료
+    workflow.add_conditional_edges(
+        "validator",
+        decide_next_step,
+        {
+            "retry": "query_generator",  # 재시도
+            "end": END                   # 완료
+        }
+    )
+    
+    return workflow.compile()
+
+# 투명성 리포트 생성 예시
+def generate_transparency_report(qa_result: QA_Result, patent_number: str):
+    """각 질문-답변에 대한 상세 분석 리포트 생성"""
+    
+    # HTML 리포트 생성
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>특허 {patent_number} 분석 과정</title>
+        <style>
+            .workflow-step {{ margin: 10px 0; padding: 10px; border-left: 3px solid #007acc; }}
+            .agent-result {{ background: #f5f5f5; padding: 8px; margin: 5px 0; }}
+            .confidence {{ color: #28a745; font-weight: bold; }}
+            .retry {{ color: #ffc107; }}
+        </style>
+    </head>
+    <body>
+        <h1>특허 {patent_number} 분석 리포트</h1>
+        <h2>질문: {qa_result['question']}</h2>
+        
+        <div class="workflow-step">
+            <h3>1. 질문 분석 (Query Analyzer)</h3>
+            <div class="agent-result">
+                복잡도: 중간 | 의도: 기술적 비교 | 필요 섹션: Claims, Description
+            </div>
+        </div>
+        
+        <div class="workflow-step">
+            <h3>2. 검색 계획 (Planning Agent)</h3>
+            <div class="agent-result">
+                전략: 다단계 검색 | 예상 쿼리 수: 3개 | 검색 깊이: 포괄적
+            </div>
+        </div>
+        
+        <div class="workflow-step">
+            <h3>3. 쿼리 생성 (Query Generator)</h3>
+            <div class="agent-result">
+                생성된 쿼리: {', '.join(qa_result['search_queries_used'])}
+            </div>
+        </div>
+        
+        <div class="workflow-step">
+            <h3>4. 문서 검색 (Retrieval Agent)</h3>
+            <div class="agent-result">
+                검색된 문서: {len(qa_result['retrieval_chunks'])}개 청크
+                관련성 점수: 평균 0.85
+            </div>
+        </div>
+        
+        <div class="workflow-step">
+            <h3>5. 답변 생성 (Synthesis Agent)</h3>
+            <div class="agent-result">
+                {qa_result['answer']}
+            </div>
+        </div>
+        
+        <div class="workflow-step">
+            <h3>6. 품질 검증 (Validation Agent)</h3>
+            <div class="agent-result confidence">
+                신뢰도: {qa_result['confidence']:.2f} | 상태: 승인됨
+            </div>
+        </div>
+        
+        <h3>참조 소스</h3>
+        <ul>
+            {''.join([f'<li>{source}</li>' for source in qa_result['sources']])}
+        </ul>
+    </body>
+    </html>
+    """
+    
+    # HTML 파일 저장
+    report_filename = f"analysis_{patent_number}_{hash(qa_result['question'])}.html"
+    report_path = f"data/reports/html/{report_filename}"
+    
+    with open(report_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    
+    return report_path
+
+# 엑셀 출력 시 투명성 정보 추가
+def add_transparency_to_excel(df, qa_results):
+    """엑셀에 답변 + 분석과정 링크 열 추가"""
+    
+    # 기존 답변 열들 추가
+    for i, qa in enumerate(qa_results):
+        question_col = f"질문{i+1}_답변"
+        process_col = f"질문{i+1}_분석과정"
+        
+        df[question_col] = qa['answer']
+        df[process_col] = qa['analysis_report_link']  # HTML 리포트 링크
+    
+    return df
+``` 

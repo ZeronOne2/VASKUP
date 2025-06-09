@@ -1,0 +1,89 @@
+# Task ID: 10
+# Title: Implement Advanced Agentic RAG System
+# Status: deferred
+# Dependencies: 7
+# Priority: high
+# Description: Develop an advanced RAG system using LangGraph for intelligent patent analysis.
+# Details:
+1. Create a new directory src/agentic_rag/agents/ for individual agent modules
+2. Implement the following agent modules:
+   - query_analyzer.py: Analyze and classify user questions
+   - planner.py: Develop answer strategies
+   - query_generator.py: Generate optimal search queries
+   - retriever.py: Perform multi-step retrieval
+   - synthesizer.py: Synthesize information and generate answers
+   - validator.py: Validate answer quality
+3. Create a main workflow file 'rag_graph.py' using LangGraph
+4. Implement state management for the RAG process
+5. Develop conditional routing logic for adaptive processing
+6. Implement logging and monitoring for the entire workflow
+7. Create a mechanism to explain the reasoning process
+
+# Test Strategy:
+1. Unit test each agent module independently
+2. Verify correct state management across the workflow
+3. Test conditional routing with various question types
+4. Benchmark performance and quality improvements over the basic RAG
+5. Verify the explainability of the reasoning process
+
+# Subtasks:
+## 1. Define agent types and roles [pending]
+### Dependencies: None
+### Description: Identify and define the different types of agents needed for the system and their specific roles.
+### Details:
+List out all required agent types (e.g., task planner, executor, evaluator) and describe their primary functions and responsibilities within the system.
+
+## 2. Design agent communication protocols [pending]
+### Dependencies: 10.1
+### Description: Establish protocols for inter-agent communication and data exchange.
+### Details:
+Define message formats, API endpoints, and data structures for agents to communicate effectively within the LangGraph framework.
+
+## 3. Implement task planning agent [pending]
+### Dependencies: 10.1, 10.2
+### Description: Develop the agent responsible for breaking down complex tasks into manageable subtasks.
+### Details:
+Create a LangGraph-compatible agent that can analyze user inputs, generate subtasks, and assign them to appropriate executor agents.
+
+## 4. Implement task execution agents [pending]
+### Dependencies: 10.1, 10.2
+### Description: Develop agents responsible for carrying out specific subtasks.
+### Details:
+Create multiple specialized agents capable of handling different types of subtasks, ensuring they can interact with external tools and APIs as needed.
+
+## 5. Implement evaluation agent [pending]
+### Dependencies: 10.1, 10.2
+### Description: Develop an agent to assess the quality and completeness of executed tasks.
+### Details:
+Create an agent that can review outputs from executor agents, provide feedback, and determine if further actions are needed.
+
+## 6. Design workflow management system [pending]
+### Dependencies: 10.1, 10.2, 10.3, 10.4, 10.5
+### Description: Create a system to orchestrate the overall workflow of agents using LangGraph.
+### Details:
+Develop a central controller that manages agent interactions, task assignments, and overall process flow within the LangGraph framework.
+
+## 7. Implement error handling and recovery mechanisms [pending]
+### Dependencies: 10.6
+### Description: Develop robust error handling and recovery processes for the agent system.
+### Details:
+Create mechanisms to detect and handle failures in agent operations, including retry logic, fallback options, and graceful degradation strategies.
+
+## 8. Develop monitoring and logging system [pending]
+### Dependencies: 10.6
+### Description: Implement a comprehensive monitoring and logging solution for the agent ecosystem.
+### Details:
+Create tools to track agent performance, log interactions and decisions, and provide real-time visibility into the system's operation.
+
+## 9. Integrate external tools and APIs [pending]
+### Dependencies: 10.4
+### Description: Incorporate necessary external tools and APIs into the agent modules.
+### Details:
+Identify required external resources and implement integrations within relevant agent modules, ensuring proper authentication and data handling.
+
+## 10. Conduct system testing and optimization [pending]
+### Dependencies: 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9
+### Description: Perform comprehensive testing of the entire agent ecosystem and optimize performance.
+### Details:
+Design and execute test scenarios, identify bottlenecks, and refine agent interactions and workflow management for optimal system performance.
+

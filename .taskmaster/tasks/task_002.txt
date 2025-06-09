@@ -1,0 +1,21 @@
+# Task ID: 2
+# Title: Implement File Upload System
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: Create a Streamlit interface for uploading Excel files containing patent numbers.
+# Details:
+1. Use Streamlit's file_uploader widget to accept .xlsx, .xls, and .csv files
+2. Implement file validation to ensure only allowed formats are uploaded
+3. Use pandas to read the uploaded file
+4. Create a function to automatically detect the patent number column
+5. Allow users to manually select the patent number column if auto-detection fails
+6. Display a preview of the uploaded data using st.dataframe()
+7. Implement error handling for file reading and processing
+
+# Test Strategy:
+1. Test uploading files of each allowed format
+2. Verify that invalid file formats are rejected
+3. Check that the patent number column is correctly identified in various file layouts
+4. Ensure the data preview displays correctly
+5. Test error handling with corrupted or invalid files

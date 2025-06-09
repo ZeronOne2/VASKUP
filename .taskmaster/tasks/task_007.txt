@@ -1,0 +1,78 @@
+# Task ID: 7
+# Title: Develop Basic RAG Pipeline
+# Status: done
+# Dependencies: 6
+# Priority: high
+# Description: Implement a basic Retrieval-Augmented Generation (RAG) pipeline for answering patent-related queries.
+# Details:
+1. Create a new module 'rag_pipeline.py' in the src/agentic_rag/ directory
+2. Implement a function to process user queries and generate search vectors
+3. Create a retrieval function that uses the vector store to find relevant patent chunks
+4. Implement a basic prompt template for the language model, incorporating retrieved chunks
+5. Set up integration with a language model (e.g., OpenAI GPT-3.5-turbo) for answer generation
+6. Create a function to post-process and format the generated answers
+7. Implement basic error handling and logging for the RAG pipeline
+8. Add a caching mechanism to store recent query results
+
+# Test Strategy:
+1. Unit test each component of the RAG pipeline
+2. Verify relevance of retrieved chunks for sample queries
+3. Test answer generation with various types of patent-related questions
+4. Benchmark end-to-end performance of the RAG pipeline
+5. Verify error handling and logging functionality
+
+# Subtasks:
+## 1. Design query processing module [done]
+### Dependencies: None
+### Description: Create a module to preprocess and analyze user queries
+### Details:
+Implement tokenization, stopword removal, and entity recognition for incoming queries
+
+## 2. Develop vector database integration [done]
+### Dependencies: None
+### Description: Integrate a vector database for efficient document retrieval
+### Details:
+Set up and configure a vector database (e.g., Pinecone, Faiss) to store document embeddings
+
+## 3. Implement semantic search functionality [done]
+### Dependencies: 7.1, 7.2
+### Description: Create a module for semantic search using embeddings
+### Details:
+Develop functions to convert queries into embeddings and perform similarity search in the vector database
+
+## 4. Design prompt engineering module [done]
+### Dependencies: 7.1
+### Description: Create a module for dynamic prompt generation
+### Details:
+Implement templates and rules for constructing effective prompts based on query analysis and retrieved context
+
+## 5. Integrate language model for answer generation [done]
+### Dependencies: None
+### Description: Set up and configure a language model for generating responses
+### Details:
+Integrate a suitable language model (e.g., GPT-3, BERT) and implement the necessary API calls
+
+## 6. Develop answer generation pipeline [done]
+### Dependencies: 7.3, 7.4, 7.5
+### Description: Create a module to generate answers using retrieved context and prompts
+### Details:
+Implement the logic to combine retrieved documents, generated prompts, and language model to produce final answers
+
+## 7. Implement result ranking and filtering [done]
+### Dependencies: 7.6
+### Description: Create a module to rank and filter generated answers
+### Details:
+Develop algorithms to score and rank multiple generated answers, and filter out low-quality or irrelevant responses
+
+## 8. Design and implement API endpoints [done]
+### Dependencies: 7.6, 7.7
+### Description: Create API endpoints for the RAG pipeline
+### Details:
+Develop RESTful API endpoints to handle user queries and return generated answers
+
+## 9. Perform end-to-end testing and optimization [done]
+### Dependencies: 7.8
+### Description: Test the complete RAG pipeline and optimize performance
+### Details:
+Conduct thorough testing of the entire pipeline, identify bottlenecks, and optimize for speed and accuracy
+

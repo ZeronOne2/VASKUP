@@ -1,0 +1,27 @@
+# Task ID: 1
+# Title: Setup Project Repository and Environment
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Initialize the project repository and set up the development environment with necessary dependencies.
+# Details:
+1. Create a new Git repository named 'patent-rag-system'
+2. Initialize a Python virtual environment
+3. Create a requirements.txt file with initial dependencies:
+   - streamlit==1.28+
+   - python-dotenv==1.0+
+   - google-search-results-python==2.4+
+   - requests==2.31+
+   - beautifulsoup4==4.12+
+   - pandas==2.0+
+   - langchain==0.0.350+
+   - langgraph==0.0.40+
+   - chromadb==0.4.15+
+4. Set up a basic project structure as outlined in the PRD
+5. Create a .env file for API keys (ensure it's in .gitignore)
+6. Initialize a basic streamlit_app.py file
+
+# Test Strategy:
+1. Verify that all dependencies install correctly
+2. Ensure the Streamlit app runs without errors
+3. Check that the .env file is properly ignored by Git

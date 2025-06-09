@@ -1,0 +1,78 @@
+# Task ID: 6
+# Title: Implement Vector Store Integration
+# Status: done
+# Dependencies: 5
+# Priority: high
+# Description: Set up and integrate a vector database (Chroma) for storing and retrieving patent data embeddings.
+# Details:
+1. Create a new module 'vector_store.py' in the src/vector_store/ directory
+2. Initialize Chroma vector store with appropriate settings
+3. Implement functions to generate embeddings for patent chunks (use OpenAI or HuggingFace models)
+4. Create functions to add patent data to the vector store, including metadata
+5. Implement efficient batch processing for adding multiple patents
+6. Create search functions to retrieve relevant patent chunks based on queries
+7. Implement persistence for the vector store to save and load embeddings
+8. Add logging and error handling for vector store operations
+
+# Test Strategy:
+1. Unit test embedding generation and consistency
+2. Verify correct storage and retrieval of patent chunks with metadata
+3. Benchmark performance of batch processing and search operations
+4. Test persistence by saving and loading the vector store
+5. Verify error handling with various edge cases (e.g., duplicate entries, invalid data)
+
+# Subtasks:
+## 1. Choose a vector store library [done]
+### Dependencies: None
+### Description: Research and select an appropriate vector store library for the project
+### Details:
+Compare options like FAISS, Annoy, or Pinecone, considering factors such as performance, scalability, and ease of integration
+
+## 2. Set up embedding model [done]
+### Dependencies: 6.1
+### Description: Choose and implement an embedding model for text-to-vector conversion
+### Details:
+Select a pre-trained model (e.g., BERT, Word2Vec) or train a custom model, and implement the embedding generation process
+
+## 3. Implement data preprocessing [done]
+### Dependencies: 6.2
+### Description: Create a pipeline for cleaning and preparing data before embedding
+### Details:
+Develop functions for text normalization, tokenization, and any necessary feature extraction
+
+## 4. Design vector store schema [done]
+### Dependencies: 6.1
+### Description: Define the structure for storing vectors and associated metadata
+### Details:
+Determine how vectors, original text, and any additional metadata will be organized within the chosen vector store
+
+## 5. Implement data insertion [done]
+### Dependencies: 6.2, 6.3, 6.4
+### Description: Create functions to add new data to the vector store
+### Details:
+Develop methods to preprocess text, generate embeddings, and insert them along with metadata into the vector store
+
+## 6. Develop retrieval functions [done]
+### Dependencies: 6.4, 6.5
+### Description: Implement efficient similarity search and retrieval methods
+### Details:
+Create functions for k-nearest neighbors search, filtering, and ranking of results based on similarity scores
+
+## 7. Implement persistence layer [done]
+### Dependencies: 6.4, 6.5
+### Description: Design and implement a system for persisting the vector store
+### Details:
+Develop methods for saving and loading the vector store, ensuring data integrity and efficient serialization/deserialization
+
+## 8. Optimize performance [done]
+### Dependencies: 6.5, 6.6, 6.7
+### Description: Analyze and improve the efficiency of vector operations
+### Details:
+Profile the system, identify bottlenecks, and implement optimizations such as indexing or caching strategies
+
+## 9. Implement CRUD operations [done]
+### Dependencies: 6.5, 6.6, 6.7
+### Description: Develop full CRUD (Create, Read, Update, Delete) functionality for the vector store
+### Details:
+Create methods for updating existing entries, deleting vectors, and maintaining consistency between the vector store and persistence layer
+

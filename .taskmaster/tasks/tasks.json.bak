@@ -1,0 +1,966 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Setup Project Repository and Environment",
+      "description": "Initialize the project repository and set up the development environment with necessary dependencies.",
+      "details": "1. Create a new Git repository named 'patent-rag-system'\n2. Initialize a Python virtual environment\n3. Create a requirements.txt file with initial dependencies:\n   - streamlit==1.28+\n   - python-dotenv==1.0+\n   - google-search-results-python==2.4+\n   - requests==2.31+\n   - beautifulsoup4==4.12+\n   - pandas==2.0+\n   - langchain==0.0.350+\n   - langgraph==0.0.40+\n   - chromadb==0.4.15+\n4. Set up a basic project structure as outlined in the PRD\n5. Create a .env file for API keys (ensure it's in .gitignore)\n6. Initialize a basic streamlit_app.py file",
+      "testStrategy": "1. Verify that all dependencies install correctly\n2. Ensure the Streamlit app runs without errors\n3. Check that the .env file is properly ignored by Git",
+      "priority": "high",
+      "dependencies": [],
+      "status": "done",
+      "subtasks": []
+    },
+    {
+      "id": 2,
+      "title": "Implement File Upload System",
+      "description": "Create a Streamlit interface for uploading Excel files containing patent numbers.",
+      "details": "1. Use Streamlit's file_uploader widget to accept .xlsx, .xls, and .csv files\n2. Implement file validation to ensure only allowed formats are uploaded\n3. Use pandas to read the uploaded file\n4. Create a function to automatically detect the patent number column\n5. Allow users to manually select the patent number column if auto-detection fails\n6. Display a preview of the uploaded data using st.dataframe()\n7. Implement error handling for file reading and processing",
+      "testStrategy": "1. Test uploading files of each allowed format\n2. Verify that invalid file formats are rejected\n3. Check that the patent number column is correctly identified in various file layouts\n4. Ensure the data preview displays correctly\n5. Test error handling with corrupted or invalid files",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "done",
+      "subtasks": []
+    },
+    {
+      "id": 3,
+      "title": "Develop SerpAPI Integration for Patent Search",
+      "description": "Implement the core functionality to search for patent information using the SerpAPI Google Patents engine.",
+      "details": "1. Create a new module 'serp_client.py' in the src/patent_search/ directory\n2. Implement a function to convert patent numbers to the required format (e.g., 'patent/US11734097B1/en')\n3. Create a search_patent function that takes a patent number and returns the search results\n4. Use the 'google_patents_details' engine in the SerpAPI call\n5. Extract relevant information from the API response (title, abstract, claims, description_link)\n6. Implement error handling and rate limiting to manage API usage\n7. Create a cache system to store results and minimize API calls",
+      "testStrategy": "1. Unit test the patent number conversion function\n2. Mock SerpAPI responses for testing\n3. Verify correct extraction of patent details from API responses\n4. Test error handling with various API error scenarios\n5. Benchmark API call performance and verify rate limiting",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "done",
+      "subtasks": []
+    },
+    {
+      "id": 4,
+      "title": "Implement Web Scraping for Patent Descriptions",
+      "description": "Create a module to scrape and process detailed patent descriptions from the links provided by SerpAPI.",
+      "details": "1. Create a new module 'description_scraper.py' in the src/patent_search/ directory\n2. Implement a function to scrape the description page using requests and BeautifulSoup\n3. Extract the English translation of the description, removing original text in <span class=\"google-src-text\">\n4. Implement error handling for network issues and parsing errors\n5. Create a function to clean and preprocess the scraped text\n6. Implement multithreading to handle multiple description scraping tasks concurrently\n7. Add logging to track scraping progress and any issues encountered",
+      "testStrategy": "1. Unit test the scraping function with sample HTML content\n2. Test error handling with various network and parsing scenarios\n3. Verify correct extraction of English translations\n4. Benchmark scraping performance, especially with multithreading\n5. Test with a variety of patent description pages to ensure robustness",
+      "priority": "high",
+      "dependencies": [
+        3
+      ],
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Set up the development environment",
+          "description": "Install necessary libraries and tools for web scraping",
+          "dependencies": [],
+          "details": "Install Python, requests, BeautifulSoup, and any other required libraries. Set up a virtual environment for the project.",
+          "status": "done"
+        },
+        {
+          "id": 2,
+          "title": "Implement basic HTML retrieval",
+          "description": "Create a function to fetch HTML content from a given URL",
+          "dependencies": [
+            1
+          ],
+          "details": "Use the requests library to send GET requests and retrieve HTML content from specified URLs.",
+          "status": "done"
+        },
+        {
+          "id": 3,
+          "title": "Develop HTML parsing functionality",
+          "description": "Create functions to parse HTML and extract relevant information",
+          "dependencies": [
+            2
+          ],
+          "details": "Use BeautifulSoup to parse HTML and create methods to extract specific elements, attributes, or text content.",
+          "status": "done"
+        },
+        {
+          "id": 4,
+          "title": "Implement text extraction and cleaning",
+          "description": "Create functions to extract and clean text from parsed HTML",
+          "dependencies": [
+            3
+          ],
+          "details": "Develop methods to extract text from specific HTML elements and clean it (remove extra whitespace, HTML entities, etc.).",
+          "status": "done"
+        },
+        {
+          "id": 5,
+          "title": "Implement error handling and logging",
+          "description": "Add robust error handling and logging mechanisms",
+          "dependencies": [
+            2,
+            3,
+            4
+          ],
+          "details": "Implement try-except blocks, custom exceptions, and logging to handle and record various errors (network issues, parsing errors, etc.).",
+          "status": "done"
+        },
+        {
+          "id": 6,
+          "title": "Develop concurrent scraping functionality",
+          "description": "Implement multithreading or asyncio for concurrent scraping",
+          "dependencies": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "details": "Use Python's threading or asyncio library to implement concurrent scraping of multiple URLs.",
+          "status": "done"
+        },
+        {
+          "id": 7,
+          "title": "Implement rate limiting and politeness",
+          "description": "Add mechanisms to control request frequency and respect robots.txt",
+          "dependencies": [
+            6
+          ],
+          "details": "Implement delays between requests, respect robots.txt rules, and add user-agent headers to scraping requests.",
+          "status": "done"
+        },
+        {
+          "id": 8,
+          "title": "Create data storage and export functionality",
+          "description": "Implement methods to store and export scraped data",
+          "dependencies": [
+            4,
+            6
+          ],
+          "details": "Develop functions to store scraped data in a database or export it to various formats (CSV, JSON, etc.).",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Develop Patent Data Processing and Chunking Module",
+      "description": "Create a module to process and chunk patent data for efficient storage and retrieval.",
+      "details": "1. Create a new module 'patent_parser.py' in the src/patent_search/ directory\n2. Implement a Patent class to structure the data (as defined in the PRD)\n3. Create functions to parse and structure data from SerpAPI and web scraping results\n4. Implement intelligent chunking for patent descriptions:\n   - Use RecursiveCharacterTextSplitter from LangChain\n   - Set appropriate chunk sizes (1000-1500 tokens) and overlap\n5. Create functions to chunk other patent sections (claims, abstract) if necessary\n6. Implement metadata tagging for each chunk (patent number, section, chunk index)\n7. Create a function to combine all processed data into a structured format for storage",
+      "testStrategy": "1. Unit test the Patent class and parsing functions\n2. Verify correct chunking of various length descriptions\n3. Test metadata tagging accuracy\n4. Benchmark chunking performance with large patent descriptions\n5. Verify that the final structured format contains all required information",
+      "priority": "high",
+      "dependencies": [
+        3,
+        4
+      ],
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "HTML Description 저장 및 청킹 보완",
+          "description": "Description 스크래핑 결과를 HTML로 저장하고 청킹 과정을 개선",
+          "details": "1. Description 스크래핑 결과를 HTML 파일로 저장하는 기능 추가\n2. 저장된 HTML 파일에서 텍스트를 추출하여 청킹하는 로직 구현\n3. 청크 데이터 구조를 vector store와 호환되도록 수정\n4. 테스트 결과 파일의 형식 개선",
+          "status": "done",
+          "dependencies": [],
+          "parentTaskId": 5
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Implement Vector Store Integration",
+      "description": "Set up and integrate a vector database (Chroma) for storing and retrieving patent data embeddings.",
+      "details": "1. Create a new module 'vector_store.py' in the src/vector_store/ directory\n2. Initialize Chroma vector store with appropriate settings\n3. Implement functions to generate embeddings for patent chunks (use OpenAI or HuggingFace models)\n4. Create functions to add patent data to the vector store, including metadata\n5. Implement efficient batch processing for adding multiple patents\n6. Create search functions to retrieve relevant patent chunks based on queries\n7. Implement persistence for the vector store to save and load embeddings\n8. Add logging and error handling for vector store operations",
+      "testStrategy": "1. Unit test embedding generation and consistency\n2. Verify correct storage and retrieval of patent chunks with metadata\n3. Benchmark performance of batch processing and search operations\n4. Test persistence by saving and loading the vector store\n5. Verify error handling with various edge cases (e.g., duplicate entries, invalid data)",
+      "priority": "high",
+      "dependencies": [
+        5
+      ],
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Choose a vector store library",
+          "description": "Research and select an appropriate vector store library for the project",
+          "dependencies": [],
+          "details": "Compare options like FAISS, Annoy, or Pinecone, considering factors such as performance, scalability, and ease of integration",
+          "status": "done"
+        },
+        {
+          "id": 2,
+          "title": "Set up embedding model",
+          "description": "Choose and implement an embedding model for text-to-vector conversion",
+          "dependencies": [
+            1
+          ],
+          "details": "Select a pre-trained model (e.g., BERT, Word2Vec) or train a custom model, and implement the embedding generation process",
+          "status": "done"
+        },
+        {
+          "id": 3,
+          "title": "Implement data preprocessing",
+          "description": "Create a pipeline for cleaning and preparing data before embedding",
+          "dependencies": [
+            2
+          ],
+          "details": "Develop functions for text normalization, tokenization, and any necessary feature extraction",
+          "status": "done"
+        },
+        {
+          "id": 4,
+          "title": "Design vector store schema",
+          "description": "Define the structure for storing vectors and associated metadata",
+          "dependencies": [
+            1
+          ],
+          "details": "Determine how vectors, original text, and any additional metadata will be organized within the chosen vector store",
+          "status": "done"
+        },
+        {
+          "id": 5,
+          "title": "Implement data insertion",
+          "description": "Create functions to add new data to the vector store",
+          "dependencies": [
+            2,
+            3,
+            4
+          ],
+          "details": "Develop methods to preprocess text, generate embeddings, and insert them along with metadata into the vector store",
+          "status": "done"
+        },
+        {
+          "id": 6,
+          "title": "Develop retrieval functions",
+          "description": "Implement efficient similarity search and retrieval methods",
+          "dependencies": [
+            4,
+            5
+          ],
+          "details": "Create functions for k-nearest neighbors search, filtering, and ranking of results based on similarity scores",
+          "status": "done"
+        },
+        {
+          "id": 7,
+          "title": "Implement persistence layer",
+          "description": "Design and implement a system for persisting the vector store",
+          "dependencies": [
+            4,
+            5
+          ],
+          "details": "Develop methods for saving and loading the vector store, ensuring data integrity and efficient serialization/deserialization",
+          "status": "done"
+        },
+        {
+          "id": 8,
+          "title": "Optimize performance",
+          "description": "Analyze and improve the efficiency of vector operations",
+          "dependencies": [
+            5,
+            6,
+            7
+          ],
+          "details": "Profile the system, identify bottlenecks, and implement optimizations such as indexing or caching strategies",
+          "status": "done"
+        },
+        {
+          "id": 9,
+          "title": "Implement CRUD operations",
+          "description": "Develop full CRUD (Create, Read, Update, Delete) functionality for the vector store",
+          "dependencies": [
+            5,
+            6,
+            7
+          ],
+          "details": "Create methods for updating existing entries, deleting vectors, and maintaining consistency between the vector store and persistence layer",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Develop Basic RAG Pipeline",
+      "description": "Implement a basic Retrieval-Augmented Generation (RAG) pipeline for answering patent-related queries.",
+      "details": "1. Create a new module 'rag_pipeline.py' in the src/agentic_rag/ directory\n2. Implement a function to process user queries and generate search vectors\n3. Create a retrieval function that uses the vector store to find relevant patent chunks\n4. Implement a basic prompt template for the language model, incorporating retrieved chunks\n5. Set up integration with a language model (e.g., OpenAI GPT-3.5-turbo) for answer generation\n6. Create a function to post-process and format the generated answers\n7. Implement basic error handling and logging for the RAG pipeline\n8. Add a caching mechanism to store recent query results",
+      "testStrategy": "1. Unit test each component of the RAG pipeline\n2. Verify relevance of retrieved chunks for sample queries\n3. Test answer generation with various types of patent-related questions\n4. Benchmark end-to-end performance of the RAG pipeline\n5. Verify error handling and logging functionality",
+      "priority": "high",
+      "dependencies": [
+        6
+      ],
+      "status": "done",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Design query processing module",
+          "description": "Create a module to preprocess and analyze user queries",
+          "dependencies": [],
+          "details": "Implement tokenization, stopword removal, and entity recognition for incoming queries",
+          "status": "done"
+        },
+        {
+          "id": 2,
+          "title": "Develop vector database integration",
+          "description": "Integrate a vector database for efficient document retrieval",
+          "dependencies": [],
+          "details": "Set up and configure a vector database (e.g., Pinecone, Faiss) to store document embeddings",
+          "status": "done"
+        },
+        {
+          "id": 3,
+          "title": "Implement semantic search functionality",
+          "description": "Create a module for semantic search using embeddings",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Develop functions to convert queries into embeddings and perform similarity search in the vector database",
+          "status": "done"
+        },
+        {
+          "id": 4,
+          "title": "Design prompt engineering module",
+          "description": "Create a module for dynamic prompt generation",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement templates and rules for constructing effective prompts based on query analysis and retrieved context",
+          "status": "done"
+        },
+        {
+          "id": 5,
+          "title": "Integrate language model for answer generation",
+          "description": "Set up and configure a language model for generating responses",
+          "dependencies": [],
+          "details": "Integrate a suitable language model (e.g., GPT-3, BERT) and implement the necessary API calls",
+          "status": "done"
+        },
+        {
+          "id": 6,
+          "title": "Develop answer generation pipeline",
+          "description": "Create a module to generate answers using retrieved context and prompts",
+          "dependencies": [
+            3,
+            4,
+            5
+          ],
+          "details": "Implement the logic to combine retrieved documents, generated prompts, and language model to produce final answers",
+          "status": "done"
+        },
+        {
+          "id": 7,
+          "title": "Implement result ranking and filtering",
+          "description": "Create a module to rank and filter generated answers",
+          "dependencies": [
+            6
+          ],
+          "details": "Develop algorithms to score and rank multiple generated answers, and filter out low-quality or irrelevant responses",
+          "status": "done"
+        },
+        {
+          "id": 8,
+          "title": "Design and implement API endpoints",
+          "description": "Create API endpoints for the RAG pipeline",
+          "dependencies": [
+            6,
+            7
+          ],
+          "details": "Develop RESTful API endpoints to handle user queries and return generated answers",
+          "status": "done"
+        },
+        {
+          "id": 9,
+          "title": "Perform end-to-end testing and optimization",
+          "description": "Test the complete RAG pipeline and optimize performance",
+          "dependencies": [
+            8
+          ],
+          "details": "Conduct thorough testing of the entire pipeline, identify bottlenecks, and optimize for speed and accuracy",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Implement Batch Processing for Multiple Patents",
+      "description": "Develop a basic MVP system to process and analyze multiple patents in batch.",
+      "status": "done",
+      "dependencies": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "priority": "high",
+      "details": "1. Create a new module 'batch_processor.py' in the src/ directory\n2. Implement a function to read and validate multiple patent numbers from the uploaded Excel file\n3. Create a simple sequential batch processing system\n4. Implement basic error handling and logging for batch operations\n5. Develop a simple progress tracking system to monitor batch processing status\n6. Implement a results aggregation function to combine processed patent data",
+      "testStrategy": "1. Test batch processing with a small number of patents\n2. Verify correct handling of API rate limits during batch processing\n3. Test the basic progress tracking system for accuracy\n4. Verify error handling and logging for common failure scenarios",
+      "subtasks": []
+    },
+    {
+      "id": 9,
+      "title": "Develop Question Management System",
+      "description": "Create a system for users to input, manage, and store custom questions for patent analysis.",
+      "details": "1. Create a new module 'question_manager.py' in the src/ directory\n2. Implement a Question class to represent user-defined questions\n3. Create Streamlit UI components for adding, editing, and deleting questions\n4. Implement a storage system for questions (e.g., JSON file or database)\n5. Create functions to load and save question sets\n6. Implement question templates for common patent analysis queries\n7. Add validation for question inputs (e.g., length, format)\n8. Create a question prioritization system",
+      "testStrategy": "1. Test CRUD operations for questions through the UI\n2. Verify persistence of question sets across app restarts\n3. Test loading and applying question templates\n4. Verify input validation for various question formats\n5. Test the question prioritization system",
+      "priority": "medium",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 10,
+      "title": "Implement Advanced Agentic RAG System",
+      "description": "Develop an advanced RAG system using LangGraph for intelligent patent analysis.",
+      "details": "1. Create a new directory src/agentic_rag/agents/ for individual agent modules\n2. Implement the following agent modules:\n   - query_analyzer.py: Analyze and classify user questions\n   - planner.py: Develop answer strategies\n   - query_generator.py: Generate optimal search queries\n   - retriever.py: Perform multi-step retrieval\n   - synthesizer.py: Synthesize information and generate answers\n   - validator.py: Validate answer quality\n3. Create a main workflow file 'rag_graph.py' using LangGraph\n4. Implement state management for the RAG process\n5. Develop conditional routing logic for adaptive processing\n6. Implement logging and monitoring for the entire workflow\n7. Create a mechanism to explain the reasoning process",
+      "testStrategy": "1. Unit test each agent module independently\n2. Verify correct state management across the workflow\n3. Test conditional routing with various question types\n4. Benchmark performance and quality improvements over the basic RAG\n5. Verify the explainability of the reasoning process",
+      "priority": "high",
+      "dependencies": [
+        7
+      ],
+      "status": "deferred",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Define agent types and roles",
+          "description": "Identify and define the different types of agents needed for the system and their specific roles.",
+          "dependencies": [],
+          "details": "List out all required agent types (e.g., task planner, executor, evaluator) and describe their primary functions and responsibilities within the system.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Design agent communication protocols",
+          "description": "Establish protocols for inter-agent communication and data exchange.",
+          "dependencies": [
+            1
+          ],
+          "details": "Define message formats, API endpoints, and data structures for agents to communicate effectively within the LangGraph framework.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement task planning agent",
+          "description": "Develop the agent responsible for breaking down complex tasks into manageable subtasks.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Create a LangGraph-compatible agent that can analyze user inputs, generate subtasks, and assign them to appropriate executor agents.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement task execution agents",
+          "description": "Develop agents responsible for carrying out specific subtasks.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Create multiple specialized agents capable of handling different types of subtasks, ensuring they can interact with external tools and APIs as needed.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Implement evaluation agent",
+          "description": "Develop an agent to assess the quality and completeness of executed tasks.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Create an agent that can review outputs from executor agents, provide feedback, and determine if further actions are needed.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Design workflow management system",
+          "description": "Create a system to orchestrate the overall workflow of agents using LangGraph.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "details": "Develop a central controller that manages agent interactions, task assignments, and overall process flow within the LangGraph framework.",
+          "status": "pending"
+        },
+        {
+          "id": 7,
+          "title": "Implement error handling and recovery mechanisms",
+          "description": "Develop robust error handling and recovery processes for the agent system.",
+          "dependencies": [
+            6
+          ],
+          "details": "Create mechanisms to detect and handle failures in agent operations, including retry logic, fallback options, and graceful degradation strategies.",
+          "status": "pending"
+        },
+        {
+          "id": 8,
+          "title": "Develop monitoring and logging system",
+          "description": "Implement a comprehensive monitoring and logging solution for the agent ecosystem.",
+          "dependencies": [
+            6
+          ],
+          "details": "Create tools to track agent performance, log interactions and decisions, and provide real-time visibility into the system's operation.",
+          "status": "pending"
+        },
+        {
+          "id": 9,
+          "title": "Integrate external tools and APIs",
+          "description": "Incorporate necessary external tools and APIs into the agent modules.",
+          "dependencies": [
+            4
+          ],
+          "details": "Identify required external resources and implement integrations within relevant agent modules, ensuring proper authentication and data handling.",
+          "status": "pending"
+        },
+        {
+          "id": 10,
+          "title": "Conduct system testing and optimization",
+          "description": "Perform comprehensive testing of the entire agent ecosystem and optimize performance.",
+          "dependencies": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "details": "Design and execute test scenarios, identify bottlenecks, and refine agent interactions and workflow management for optimal system performance.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Develop Transparency Reporting System",
+      "description": "Create a system to generate detailed HTML reports explaining the analysis process for each patent query.",
+      "details": "1. Create a new module 'transparency_report.py' in the src/transparency/ directory\n2. Design an HTML template for the transparency report\n3. Implement functions to capture detailed information from each step of the RAG process\n4. Create visualizations for the agent workflow (e.g., using Graphviz)\n5. Implement functions to generate and save HTML reports\n6. Create a linking system between Excel results and HTML reports\n7. Implement caching for report generation to improve performance\n8. Add options for users to customize report detail level",
+      "testStrategy": "1. Verify accuracy of captured information in reports\n2. Test report generation with various query complexities\n3. Verify correct linking between Excel results and HTML reports\n4. Test performance with caching for repeated queries\n5. Verify customization options for report detail",
+      "priority": "medium",
+      "dependencies": [
+        10
+      ],
+      "status": "deferred",
+      "subtasks": []
+    },
+    {
+      "id": 12,
+      "title": "Implement Excel Result Output System",
+      "description": "Develop a basic system to output analysis results to an Excel file for the MVP, focusing on core functionality without advanced features.",
+      "status": "pending",
+      "dependencies": [
+        8,
+        9
+      ],
+      "priority": "high",
+      "details": "1. Create a new module 'excel_output.py' in the src/file_handler/ directory\n2. Implement functions to create and format Excel files using openpyxl or XlsxWriter\n3. Create a template for the output Excel file with appropriate columns\n4. Implement functions to add analysis results to the Excel file\n5. Add columns for question-specific answers to the original Excel file\n6. Implement optional display of confidence scores\n7. Develop basic file download functionality\n8. Implement error handling for Excel file operations",
+      "testStrategy": "1. Verify correct data population in Excel files\n2. Test handling of various data types and lengths in Excel cells\n3. Verify the addition of question-specific answer columns\n4. Test the optional display of confidence scores\n5. Verify basic file download functionality\n6. Test error handling with various Excel operation scenarios",
+      "subtasks": []
+    },
+    {
+      "id": 13,
+      "title": "Develop User Interface for Analysis Configuration",
+      "description": "Create a Streamlit interface for users to configure and run patent analysis tasks.",
+      "details": "1. Enhance the Streamlit app with sections for analysis configuration\n2. Implement UI components for selecting patents to analyze\n3. Create interfaces for choosing and prioritizing questions\n4. Implement options for configuring RAG parameters (e.g., retrieval depth, model selection)\n5. Add progress bars and status updates for ongoing analyses\n6. Implement error messaging and user notifications\n7. Create a dashboard for viewing analysis results\n8. Add options for exporting results and reports",
+      "testStrategy": "1. Test UI responsiveness with various input scenarios\n2. Verify correct application of user configurations to the analysis process\n3. Test progress tracking accuracy for long-running analyses\n4. Verify error message clarity and helpfulness\n5. Test the results dashboard with various analysis outputs",
+      "priority": "medium",
+      "dependencies": [
+        2,
+        9,
+        10
+      ],
+      "status": "deferred",
+      "subtasks": []
+    },
+    {
+      "id": 14,
+      "title": "Implement Caching and Performance Optimization",
+      "description": "Develop caching mechanisms and optimize performance across the entire system.",
+      "details": "1. Implement a caching system for SerpAPI results to reduce API calls\n2. Create a local cache for scraped patent descriptions\n3. Optimize vector store operations for faster retrieval\n4. Implement query result caching in the RAG system\n5. Optimize batch processing with improved parallelization\n6. Implement lazy loading for large datasets in the UI\n7. Profile the application and identify performance bottlenecks\n8. Optimize memory usage, especially for large patent datasets",
+      "testStrategy": "1. Benchmark system performance before and after optimizations\n2. Verify cache hit rates for various operations\n3. Test system behavior with large datasets (e.g., 1000+ patents)\n4. Monitor memory usage during extended operation\n5. Verify that optimizations don't impact result accuracy",
+      "priority": "medium",
+      "dependencies": [
+        3,
+        4,
+        6,
+        7,
+        10
+      ],
+      "status": "deferred",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Analyze current system performance",
+          "description": "Conduct a thorough analysis of the current system performance to identify bottlenecks and areas for improvement.",
+          "dependencies": [],
+          "details": "Use profiling tools to measure response times, resource utilization, and identify performance bottlenecks across all system components.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Design caching strategy",
+          "description": "Develop a comprehensive caching strategy for different system components based on the performance analysis.",
+          "dependencies": [
+            1
+          ],
+          "details": "Determine appropriate caching mechanisms (e.g., in-memory, distributed, CDN) for each component and define cache invalidation policies.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement database query caching",
+          "description": "Implement caching for frequently executed database queries to reduce database load and improve response times.",
+          "dependencies": [
+            2
+          ],
+          "details": "Use query result caching techniques, such as materialized views or in-memory caching solutions like Redis, to store and retrieve frequently accessed data.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement application-level caching",
+          "description": "Implement caching mechanisms within the application code to store and reuse computed results.",
+          "dependencies": [
+            2
+          ],
+          "details": "Use in-memory caching libraries or distributed caching solutions to store method results, API responses, or rendered page fragments.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Set up Content Delivery Network (CDN)",
+          "description": "Implement a CDN to cache and serve static assets closer to end-users, reducing latency and server load.",
+          "dependencies": [
+            2
+          ],
+          "details": "Choose a CDN provider, configure origin servers, and update asset URLs to use CDN-hosted versions for improved global content delivery.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Optimize front-end performance",
+          "description": "Implement front-end optimizations to improve page load times and user experience.",
+          "dependencies": [
+            5
+          ],
+          "details": "Minify and compress assets, implement lazy loading, use browser caching, and optimize critical rendering path for faster initial page loads.",
+          "status": "pending"
+        },
+        {
+          "id": 7,
+          "title": "Implement cache monitoring and analytics",
+          "description": "Set up monitoring and analytics for cache performance to ensure effectiveness and identify areas for improvement.",
+          "dependencies": [
+            3,
+            4,
+            5
+          ],
+          "details": "Implement cache hit/miss ratio tracking, cache size monitoring, and performance impact analysis tools to continuously optimize caching strategies.",
+          "status": "pending"
+        },
+        {
+          "id": 8,
+          "title": "Develop cache management tools",
+          "description": "Create tools for managing and maintaining caches across different system components.",
+          "dependencies": [
+            3,
+            4,
+            5
+          ],
+          "details": "Develop utilities for manual cache invalidation, cache warming, and cache consistency checks to ensure data integrity and optimal performance.",
+          "status": "pending"
+        },
+        {
+          "id": 9,
+          "title": "Conduct performance testing and optimization",
+          "description": "Perform comprehensive performance testing and fine-tune caching mechanisms based on real-world usage patterns.",
+          "dependencies": [
+            7,
+            8
+          ],
+          "details": "Conduct load testing, stress testing, and real-user monitoring to validate caching effectiveness and make data-driven optimizations to the overall caching strategy.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Develop Advanced Analytics Features",
+      "description": "Implement advanced patent analysis features such as similarity analysis and trend detection.",
+      "details": "1. Implement patent similarity analysis using vector embeddings\n2. Create visualizations for patent similarity (e.g., network graphs)\n3. Develop algorithms for detecting technology trends across patents\n4. Implement feature extraction for key technologies mentioned in patents\n5. Create a dashboard for visualizing trend analysis results\n6. Implement comparative analysis features for multiple patents\n7. Develop export functionality for advanced analytics results",
+      "testStrategy": "1. Verify accuracy of similarity measurements with known similar patents\n2. Test trend detection with historical patent datasets\n3. Verify usefulness and clarity of generated visualizations\n4. Test comparative analysis features with diverse patent sets\n5. Verify export functionality for various output formats",
+      "priority": "low",
+      "dependencies": [
+        6,
+        10,
+        12
+      ],
+      "status": "deferred",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Define requirements for advanced analytics features",
+          "description": "Outline the specific requirements for similarity analysis, trend detection, and visualization creation",
+          "dependencies": [],
+          "details": "Collaborate with stakeholders to determine the exact functionalities needed for each feature",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Develop similarity analysis algorithm",
+          "description": "Create an algorithm to analyze and compare patent documents for similarity",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement text processing techniques and similarity metrics to identify related patents",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement trend detection functionality",
+          "description": "Design and code a system to identify and track trends in patent data",
+          "dependencies": [
+            1
+          ],
+          "details": "Utilize time series analysis and machine learning techniques to detect emerging trends",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Create data visualization components",
+          "description": "Develop reusable components for various types of data visualizations",
+          "dependencies": [
+            1
+          ],
+          "details": "Build charts, graphs, and interactive elements to represent patent data visually",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Integrate similarity analysis with existing system",
+          "description": "Incorporate the similarity analysis feature into the main application",
+          "dependencies": [
+            2
+          ],
+          "details": "Ensure seamless integration with the existing database and user interface",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Integrate trend detection with existing system",
+          "description": "Incorporate the trend detection feature into the main application",
+          "dependencies": [
+            3
+          ],
+          "details": "Connect trend detection functionality with the existing data pipeline and user interface",
+          "status": "pending"
+        },
+        {
+          "id": 7,
+          "title": "Implement visualization creation interface",
+          "description": "Develop a user interface for creating and customizing visualizations",
+          "dependencies": [
+            4
+          ],
+          "details": "Design an intuitive interface allowing users to select data and visualization types",
+          "status": "pending"
+        },
+        {
+          "id": 8,
+          "title": "Optimize performance of advanced analytics features",
+          "description": "Improve the efficiency and speed of similarity analysis and trend detection",
+          "dependencies": [
+            5,
+            6
+          ],
+          "details": "Implement caching, parallel processing, and other optimization techniques",
+          "status": "pending"
+        },
+        {
+          "id": 9,
+          "title": "Conduct testing and quality assurance",
+          "description": "Perform thorough testing of all implemented advanced analytics features",
+          "dependencies": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "details": "Develop and execute test cases, fix bugs, and ensure overall system stability",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "Implement User Authentication and Project Management",
+      "description": "Develop user authentication and project management features for multi-user support.",
+      "details": "1. Implement user authentication system (e.g., using Streamlit-Authenticator)\n2. Create user profile management functionality\n3. Develop a project system for organizing patent analyses\n4. Implement access controls for projects and results\n5. Create a dashboard for managing multiple projects\n6. Implement collaboration features (e.g., shared projects, comments)\n7. Develop a notification system for long-running analyses\n8. Implement usage tracking and quotas if necessary",
+      "testStrategy": "1. Test user registration, login, and logout processes\n2. Verify correct application of access controls\n3. Test project creation, editing, and deletion\n4. Verify collaboration features with multiple test users\n5. Test notification system for various scenarios",
+      "priority": "low",
+      "dependencies": [
+        1,
+        13
+      ],
+      "status": "deferred",
+      "subtasks": []
+    },
+    {
+      "id": 17,
+      "title": "Develop API for External Integration",
+      "description": "Create an API to allow external systems to interact with the patent analysis system.",
+      "details": "1. Design RESTful API endpoints for key functionalities\n2. Implement API using FastAPI framework\n3. Create authentication and authorization for API access\n4. Develop endpoints for submitting analysis jobs\n5. Implement status checking and result retrieval endpoints\n6. Create documentation for the API (e.g., using Swagger UI)\n7. Implement rate limiting and usage monitoring\n8. Develop sample client code for API usage",
+      "testStrategy": "1. Test each API endpoint for correct functionality\n2. Verify authentication and authorization mechanisms\n3. Test concurrent API requests and system load handling\n4. Verify rate limiting and usage monitoring accuracy\n5. Test API with sample client code in various languages",
+      "priority": "low",
+      "dependencies": [
+        10,
+        12,
+        14
+      ],
+      "status": "deferred",
+      "subtasks": []
+    },
+    {
+      "id": 18,
+      "title": "System Testing and Deployment Preparation",
+      "description": "Conduct comprehensive system testing and prepare for deployment.",
+      "details": "1. Develop a comprehensive test suite covering all system components\n2. Conduct integration testing of all modules\n3. Perform stress testing with large datasets and concurrent users\n4. Conduct user acceptance testing with sample user group\n5. Optimize application for production environment\n6. Set up monitoring and logging for production\n7. Create deployment scripts and documentation\n8. Prepare user manual and system documentation\n9. Conduct security audit and implement necessary safeguards\n10. Plan rollout strategy and backup procedures",
+      "testStrategy": "1. Execute the full test suite and verify all components work together\n2. Conduct end-to-end testing with real-world patent datasets\n3. Verify system stability under high load\n4. Collect and address feedback from user acceptance testing\n5. Test deployment process in a staging environment\n6. Verify all documentation for completeness and clarity\n7. Conduct penetration testing and verify security measures",
+      "priority": "high",
+      "dependencies": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "status": "deferred",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Define Test Strategy",
+          "description": "Develop a comprehensive test strategy document outlining the overall approach, objectives, and scope of testing.",
+          "dependencies": [],
+          "details": "Include test levels, types, environments, and resource allocation in the strategy document.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Create Test Plan",
+          "description": "Develop a detailed test plan based on the test strategy, including specific test cases, scenarios, and expected results.",
+          "dependencies": [
+            1
+          ],
+          "details": "Ensure coverage of functional, non-functional, and edge cases in the test plan.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Develop Unit Tests",
+          "description": "Create and implement unit tests for individual components and functions of the system.",
+          "dependencies": [
+            2
+          ],
+          "details": "Use appropriate testing frameworks and aim for high code coverage.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement Integration Tests",
+          "description": "Develop and execute integration tests to verify the interaction between different system components.",
+          "dependencies": [
+            3
+          ],
+          "details": "Focus on API integrations, database interactions, and third-party service integrations.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Perform System Testing",
+          "description": "Conduct comprehensive system testing to evaluate the entire system's functionality and performance.",
+          "dependencies": [
+            4
+          ],
+          "details": "Include end-to-end scenarios, workflow testing, and system-wide functionality verification.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Execute Performance Testing",
+          "description": "Design and run performance tests to assess system responsiveness, scalability, and stability under various load conditions.",
+          "dependencies": [
+            5
+          ],
+          "details": "Use appropriate tools for load testing, stress testing, and benchmarking.",
+          "status": "pending"
+        },
+        {
+          "id": 7,
+          "title": "Conduct Security Testing",
+          "description": "Perform security assessments and penetration testing to identify vulnerabilities and ensure system security.",
+          "dependencies": [
+            5
+          ],
+          "details": "Include vulnerability scans, authentication testing, and data protection verification.",
+          "status": "pending"
+        },
+        {
+          "id": 8,
+          "title": "Implement User Acceptance Testing (UAT)",
+          "description": "Coordinate and facilitate user acceptance testing with stakeholders to validate system usability and functionality.",
+          "dependencies": [
+            5
+          ],
+          "details": "Prepare test scenarios, guide users through the testing process, and collect feedback.",
+          "status": "pending"
+        },
+        {
+          "id": 9,
+          "title": "Perform Regression Testing",
+          "description": "Conduct regression testing to ensure new changes haven't negatively impacted existing functionality.",
+          "dependencies": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "details": "Automate regression test suites where possible for efficiency.",
+          "status": "pending"
+        },
+        {
+          "id": 10,
+          "title": "Prepare Deployment Package",
+          "description": "Compile all necessary components, documentation, and instructions for system deployment.",
+          "dependencies": [
+            9
+          ],
+          "details": "Include deployment scripts, configuration files, and rollback procedures in the package.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "title": "하이브리드 서치 시스템 구현",
+      "description": "Vector Store 검색 성능 개선을 위한 BM25 + Vector Search 하이브리드 시스템 구현",
+      "details": "1. BM25 키워드 검색 엔진 추가\n2. Vector Search + BM25 Hybrid Search 구현  \n3. Cross-encoder 기반 Reranking 시스템 추가\n4. 기존 CRAG 파이프라인과의 통합",
+      "testStrategy": "",
+      "status": "pending",
+      "dependencies": [
+        8
+      ],
+      "priority": "high",
+      "subtasks": []
+    }
+  ]
+}

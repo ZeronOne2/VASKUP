@@ -1,0 +1,21 @@
+# Task ID: 3
+# Title: Develop SerpAPI Integration for Patent Search
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: Implement the core functionality to search for patent information using the SerpAPI Google Patents engine.
+# Details:
+1. Create a new module 'serp_client.py' in the src/patent_search/ directory
+2. Implement a function to convert patent numbers to the required format (e.g., 'patent/US11734097B1/en')
+3. Create a search_patent function that takes a patent number and returns the search results
+4. Use the 'google_patents_details' engine in the SerpAPI call
+5. Extract relevant information from the API response (title, abstract, claims, description_link)
+6. Implement error handling and rate limiting to manage API usage
+7. Create a cache system to store results and minimize API calls
+
+# Test Strategy:
+1. Unit test the patent number conversion function
+2. Mock SerpAPI responses for testing
+3. Verify correct extraction of patent details from API responses
+4. Test error handling with various API error scenarios
+5. Benchmark API call performance and verify rate limiting

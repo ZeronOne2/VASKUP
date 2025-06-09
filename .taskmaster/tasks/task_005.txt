@@ -1,0 +1,34 @@
+# Task ID: 5
+# Title: Develop Patent Data Processing and Chunking Module
+# Status: done
+# Dependencies: 3, 4
+# Priority: high
+# Description: Create a module to process and chunk patent data for efficient storage and retrieval.
+# Details:
+1. Create a new module 'patent_parser.py' in the src/patent_search/ directory
+2. Implement a Patent class to structure the data (as defined in the PRD)
+3. Create functions to parse and structure data from SerpAPI and web scraping results
+4. Implement intelligent chunking for patent descriptions:
+   - Use RecursiveCharacterTextSplitter from LangChain
+   - Set appropriate chunk sizes (1000-1500 tokens) and overlap
+5. Create functions to chunk other patent sections (claims, abstract) if necessary
+6. Implement metadata tagging for each chunk (patent number, section, chunk index)
+7. Create a function to combine all processed data into a structured format for storage
+
+# Test Strategy:
+1. Unit test the Patent class and parsing functions
+2. Verify correct chunking of various length descriptions
+3. Test metadata tagging accuracy
+4. Benchmark chunking performance with large patent descriptions
+5. Verify that the final structured format contains all required information
+
+# Subtasks:
+## 1. HTML Description 저장 및 청킹 보완 [done]
+### Dependencies: None
+### Description: Description 스크래핑 결과를 HTML로 저장하고 청킹 과정을 개선
+### Details:
+1. Description 스크래핑 결과를 HTML 파일로 저장하는 기능 추가
+2. 저장된 HTML 파일에서 텍스트를 추출하여 청킹하는 로직 구현
+3. 청크 데이터 구조를 vector store와 호환되도록 수정
+4. 테스트 결과 파일의 형식 개선
+

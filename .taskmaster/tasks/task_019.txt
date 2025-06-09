@@ -1,0 +1,43 @@
+# Task ID: 19
+# Title: 하이브리드 서치 시스템 구현
+# Status: done
+# Dependencies: 8
+# Priority: high
+# Description: Vector Store 검색 성능 개선을 위한 BM25 + Vector Search 하이브리드 시스템 구현
+# Details:
+1. BM25 키워드 검색 엔진 추가
+2. Vector Search + BM25 Hybrid Search 구현  
+3. Cross-encoder 기반 Reranking 시스템 추가
+4. 기존 CRAG 파이프라인과의 통합
+
+# Test Strategy:
+
+
+# Subtasks:
+## 1. BM25 검색 엔진 클래스 개발 [done]
+### Dependencies: None
+### Description: rank-bm25 라이브러리를 사용하여 키워드 기반 검색 엔진 클래스 구현
+### Details:
+- rank-bm25 라이브러리 설치 및 import
+- 특허 문서 텍스트 전처리 및 토큰화
+- BM25 인덱스 생성 및 검색 기능
+- 한국어 특허 도메인에 최적화된 파라미터 튜닝
+
+## 2. 하이브리드 검색 매니저 구현 [done]
+### Dependencies: 19.1
+### Description: Vector Search와 BM25 검색 결과를 결합하는 하이브리드 검색 시스템
+### Details:
+- Vector Search와 BM25 검색 결과 통합
+- 가중치 기반 스코어 결합 알고리즘
+- 중복 문서 제거 및 정규화
+- 검색 성능 최적화
+
+## 3. Cross-encoder 기반 Reranker 개발 [done]
+### Dependencies: 19.2
+### Description: sentence-transformers를 사용한 정밀 재랭킹 시스템 구현
+### Details:
+- sentence-transformers 라이브러리 설치
+- Cross-encoder 모델 로딩 (ms-marco-MiniLM-L-6-v2 등)
+- 질문-문서 쌍에 대한 관련성 스코어 계산
+- 한국어 특허 도메인에 맞는 모델 선택 및 튜닝
+
