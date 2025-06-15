@@ -1,0 +1,538 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# LangGraph Streamlit Integration Guide
+
+Step-by-step guide for integrating LangGraph workflows into Streamlit web applications.
+
+## Architecture Overview
+
+### Project Structure
+
+```
+project/
+├── main.py              # Streamlit application
+├── streamlit_wrapper.py # Streamlit integration wrapper
+├── prompts/             # Prompt template directory
+│   ├── code-rag-prompt.yaml
+│   ├── router-prompt.yaml
+│   ├── grader-prompt.yaml
+│   └── agent-prompt.yaml
+└── modules/             # Core modules directory
+    ├── __init__.py      # Module initialization
+    ├── states.py        # Workflow state definitions
+    ├── nodes.py         # Workflow node implementations
+    ├── chains.py        # LLM chain collection
+    ├── rag.py           # RAG chain configuration
+    ├── retrievers.py    # Vector DB retrievers
+    ├── tools.py         # Tool implementations
+    ├── base.py          # Tool abstract classes
+    ├── agent.py         # Agent creation
+    └── utils.py         # Utility functions
+```
+
+### Import Structure Refactoring
+
+```python
+# streamlit_wrapper.py
+from modules.states import GraphState
+from modules.nodes import *
+from modules.chains import create_question_router_chain
+from modules.rag import create_rag_chain
+from modules.retrievers import init_retriever
+from modules.tools import WebSearchTool
+from modules.agent import create_agent_executor
+
+# main.py
+from streamlit_wrapper import create_graph, stream_graph
+from modules.utils import convert_notebook_to_md
+```
+
+### Module Initialization Setup
+
+```python
+# modules/__init__.py
+"""LangGraph application core modules"""
+
+from .states import GraphState
+from .nodes import (
+    BaseNode,
+    RouteQuestionNode, 
+    RetrieveNode,
+    GeneralAnswerNode,
+    RagAnswerNode,
+    FilteringDocumentsNode,
+    WebSearchNode,
+    AnswerGroundednessCheckNode,
+    AgentNode
+)
+from .chains import (
+    create_question_router_chain,
+    create_question_rewrite_chain,
+    create_retrieval_grader_chain,
+    create_groundedness_checker_chain,
+    create_answer_grade_chain
+)
+from .rag import create_rag_chain
+from .retrievers import init_retriever
+from .tools import WebSearchTool
+from .agent import create_agent_executor
+from .base import BaseTool
+from .prompts import prompt_manager
+
+__all__ = [
+    # States
+    'GraphState',
+    
+    # Nodes
+    'BaseNode',
+    'RouteQuestionNode',
+    'RetrieveNode', 
+    'GeneralAnswerNode',
+    'RagAnswerNode',
+    'FilteringDocumentsNode',
+    'WebSearchNode',
+    'AnswerGroundednessCheckNode',
+    'AgentNode',
+    
+    # Chains
+    'create_question_router_chain',
+    'create_question_rewrite_chain',
+    'create_retrieval_grader_chain',
+    'create_groundedness_checker_chain',
+    'create_answer_grade_chain',
+    
+    # RAG & Retrievers
+    'create_rag_chain',
+    'init_retriever',
+    
+    # Tools & Agent
+    'BaseTool',
+    'WebSearchTool',
+    'create_agent_executor',
+    
+    # Prompt Management
+    'prompt_manager'
+]
+```
+
+Clean import structure allows:
+
+```python
+# streamlit_wrapper.py
+from modules import (
+    GraphState,
+    RouteQuestionNode,
+    RetrieveNode,
+    create_rag_chain,
+    init_retriever,
+    WebSearchTool,
+    prompt_manager
+)
+
+# Or individual imports
+from modules.states import GraphState
+from modules.nodes import RouteQuestionNode, RetrieveNode
+from modules.prompts import prompt_manager
+```
+
+## Core Component Analysis
+
+### 1. State Management (states.py)
+
+```python
+from typing import List
+from typing_extensions import TypedDict, Annotated
+
+class GraphState(TypedDict):
+    """Core data model defining workflow state"""
+    question: Annotated[str, "User question"]
+    generation: Annotated[str, "LLM generated answer"]
+    documents: Annotated[List[str], "List of documents"]
+```
+
+**Features:**
+- Type safety using TypedDict
+- Annotated field meanings
+- State shared across entire workflow
+
+### 2. Node System (nodes.py)
+
+```python
+from abc import ABC, abstractmethod
+
+class BaseNode(ABC):
+    """Base class for all nodes"""
+    def __init__(self, **kwargs):
+        self.name = "BaseNode"
+        self.verbose = kwargs.get("verbose", False)
+    
+    @abstractmethod
+    def execute(self, state: GraphState) -> GraphState:
+        pass
+    
+    def __call__(self, state: GraphState):
+        return self.execute(state)
+```
+
+**Node Implementation Examples:**
+
+```python
+class RouteQuestionNode(BaseNode):
+    """Route questions to appropriate paths"""
+    def execute(self, state: GraphState) -> str:
+        question = state["question"]
+        evaluation = self.router_chain.invoke({"question": question})
+        
+        if evaluation.binary_score == "yes":
+            return "query_expansion"
+        else:
+            return "general_answer"
+
+class RetrieveNode(BaseNode):
+    """Document retrieval node"""
+    def execute(self, state: GraphState) -> GraphState:
+        question = state["question"]
+        documents = self.retriever.invoke(question)
+        return GraphState(documents=documents)
+```
+
+**Features:**
+- Abstract base class pattern for consistency
+- Each node follows single responsibility principle
+- Built-in logging functionality
+- Functional call support (`__call__`)
+
+### 3. Chain Management (chains.py)
+
+```python
+# Pydantic models for structured output
+class RouteQuery(BaseModel):
+    binary_score: Literal["yes", "no"] = Field(...)
+
+def create_question_router_chain():
+    """Create question routing chain"""
+    llm = ChatOpenAI(model=MODEL_NAME, temperature=0)
+    structured_llm = llm.with_structured_output(RouteQuery)
+    
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("human", "{question}")
+    ])
+    
+    return prompt | structured_llm
+```
+
+**Features:**
+- Factory pattern for chain creation
+- Structured output utilization
+- Separated prompt templates
+
+### 4. RAG Chain (rag.py)
+
+```python
+def create_rag_chain(prompt_name="code-rag-prompt", model_name="gpt-4o"):
+    """Create RAG chain"""
+    # Load prompt from YAML file
+    rag_prompt = load_prompt(f"prompts/{prompt_name}.yaml")
+    llm = ChatOpenAI(model_name=model_name, temperature=0)
+    
+    rag_chain = (
+        {
+            "question": itemgetter("question"),
+            "context": itemgetter("context"),
+        }
+        | rag_prompt
+        | llm
+        | StrOutputParser()
+    )
+    return rag_chain
+```
+
+**Features:**
+- External YAML prompt loading
+- Configurable model selection
+- Chaining pattern usage
+
+## Streamlit Integration Patterns
+
+### 1. Basic Streamlit App Structure
+
+```python
+# main.py
+import streamlit as st
+from streamlit_wrapper import create_graph, stream_graph
+
+def main():
+    st.title("LangGraph AI Assistant")
+    
+    # Initialize session state
+    if "graph" not in st.session_state:
+        st.session_state.graph = create_graph()
+    
+    # User input
+    question = st.text_input("Enter your question:")
+    
+    if st.button("Submit"):
+        # Stream response
+        response_placeholder = st.empty()
+        full_response = ""
+        
+        for chunk in stream_graph(st.session_state.graph, question):
+            full_response += chunk
+            response_placeholder.markdown(full_response)
+
+if __name__ == "__main__":
+    main()
+```
+
+### 2. Session State Management
+
+```python
+# Initialize workflow state
+def init_session_state():
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    
+    if "graph_state" not in st.session_state:
+        st.session_state.graph_state = {
+            "question": "",
+            "generation": "",
+            "documents": [],
+            "chat_history": []
+        }
+    
+    if "workflow" not in st.session_state:
+        st.session_state.workflow = create_workflow()
+```
+
+### 3. Streaming Response Handler
+
+```python
+def handle_streaming_response(graph, question):
+    """Handle streaming response from LangGraph"""
+    response_container = st.empty()
+    full_response = ""
+    
+    try:
+        for event in graph.stream({"question": question}):
+            for node_name, node_output in event.items():
+                if "generation" in node_output:
+                    chunk = node_output["generation"]
+                    full_response += chunk
+                    response_container.markdown(full_response + "▌")
+        
+        # Final response without cursor
+        response_container.markdown(full_response)
+        
+    except Exception as e:
+        st.error(f"Error during streaming: {str(e)}")
+    
+    return full_response
+```
+
+### 4. File Upload Integration
+
+```python
+def handle_file_upload():
+    """Handle file upload and processing"""
+    uploaded_files = st.file_uploader(
+        "Upload documents",
+        type=["txt", "md", "pdf"],
+        accept_multiple_files=True
+    )
+    
+    if uploaded_files:
+        documents = []
+        
+        for file in uploaded_files:
+            # Process different file types
+            if file.type == "text/plain":
+                content = str(file.read(), "utf-8")
+                documents.append(content)
+            elif file.type == "application/pdf":
+                content = extract_pdf_text(file)
+                documents.append(content)
+        
+        # Update vector store
+        if documents:
+            update_vectorstore(documents)
+            st.success(f"Processed {len(documents)} documents")
+```
+
+### 5. Real-time Status Updates
+
+```python
+def display_workflow_status(graph_state):
+    """Display current workflow status"""
+    
+    # Progress indicators
+    progress_cols = st.columns(4)
+    
+    with progress_cols[0]:
+        if graph_state.get("question"):
+            st.success("✅ Question Received")
+        else:
+            st.info("⏳ Waiting for question")
+    
+    with progress_cols[1]:
+        if graph_state.get("documents"):
+            st.success(f"✅ Found {len(graph_state['documents'])} docs")
+        else:
+            st.info("⏳ Searching documents")
+    
+    with progress_cols[2]:
+        if graph_state.get("generation"):
+            st.success("✅ Response Generated")
+        else:
+            st.info("⏳ Generating response")
+    
+    with progress_cols[3]:
+        if graph_state.get("final_answer"):
+            st.success("✅ Complete")
+        else:
+            st.info("⏳ Processing")
+```
+
+## Advanced Features
+
+### 1. Chat Interface
+
+```python
+def create_chat_interface():
+    """Create chat-like interface"""
+    
+    # Display chat history
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+    
+    # Chat input
+    if prompt := st.chat_input("What's your question?"):
+        # Add user message
+        st.session_state.messages.append({
+            "role": "user", 
+            "content": prompt
+        })
+        
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        
+        # Generate assistant response
+        with st.chat_message("assistant"):
+            response = handle_streaming_response(
+                st.session_state.graph, 
+                prompt
+            )
+            
+        # Add assistant message
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": response
+        })
+```
+
+### 2. Configuration Panel
+
+```python
+def create_config_panel():
+    """Create configuration sidebar"""
+    
+    with st.sidebar:
+        st.header("Configuration")
+        
+        # Model selection
+        model = st.selectbox(
+            "Select Model",
+            ["gpt-4", "gpt-3.5-turbo", "claude-3-sonnet"]
+        )
+        
+        # Temperature setting
+        temperature = st.slider(
+            "Temperature",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.1,
+            step=0.1
+        )
+        
+        # Retrieval settings
+        k_docs = st.number_input(
+            "Number of documents to retrieve",
+            min_value=1,
+            max_value=10,
+            value=4
+        )
+        
+        # Update configuration
+        if st.button("Update Configuration"):
+            update_workflow_config({
+                "model": model,
+                "temperature": temperature,
+                "k_docs": k_docs
+            })
+```
+
+### 3. Debug Mode
+
+```python
+def enable_debug_mode():
+    """Enable debug mode with state inspection"""
+    
+    if st.sidebar.checkbox("Debug Mode"):
+        st.sidebar.header("Debug Information")
+        
+        # Display current state
+        with st.sidebar.expander("Current State"):
+            st.json(st.session_state.graph_state)
+        
+        # Display execution logs
+        with st.sidebar.expander("Execution Logs"):
+            for log in st.session_state.get("execution_logs", []):
+                st.text(log)
+        
+        # Display retrieved documents
+        with st.sidebar.expander("Retrieved Documents"):
+            for i, doc in enumerate(st.session_state.graph_state.get("documents", [])):
+                st.text_area(f"Document {i+1}", doc[:200] + "...")
+```
+
+## Best Practices
+
+### 1. **State Management**
+   - Use st.session_state for workflow persistence
+   - Initialize all required state variables
+   - Clear state when needed for new sessions
+
+### 2. **Performance Optimization**
+   - Cache expensive operations with @st.cache_data
+   - Use streaming for real-time responses
+   - Implement lazy loading for large datasets
+
+### 3. **Error Handling**
+   - Wrap LangGraph operations in try-catch blocks
+   - Display user-friendly error messages
+   - Implement graceful fallbacks
+
+### 4. **User Experience**
+   - Provide visual feedback during processing
+   - Show progress indicators
+   - Enable real-time streaming responses
+
+### 5. **Configuration Management**
+   - Store configuration in session state
+   - Provide user controls for key parameters
+   - Validate configuration changes
+
+### 6. **Security Considerations**
+   - Sanitize user inputs
+   - Implement rate limiting
+   - Secure API key management
+
+### 7. **Testing Strategy**
+   - Test individual components separately
+   - Use mock data for development
+   - Implement integration tests for workflows
+

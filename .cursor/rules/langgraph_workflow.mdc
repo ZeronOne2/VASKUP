@@ -1,0 +1,274 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# LangGraph AI Workflow Development
+
+## Project Overview
+
+This project builds advanced AI workflows using LangGraph. It develops enterprise-level AI applications that include complex state management, multi-agent collaboration, dynamic routing, and human review processes.
+
+## Core Architecture Principles
+
+### 1. State-First Design
+
+- **All workflows start with clearly defined State**
+  - Use TypedDict to ensure type safety
+  - Use Annotated to specify state update strategies
+  - Build message-centric workflows based on MessagesState
+
+```python
+from typing_extensions import TypedDict, Annotated
+from langchain_core.messages import BaseMessage, add_messages
+
+class GraphState(TypedDict):
+    question: Annotated[str, "User question"]
+    generation: Annotated[str, "LLM generated answer"]
+    documents: Annotated[List[str], "List of documents"]
+    messages: Annotated[List[BaseMessage], add_messages]
+```
+
+### 2. Node Composition Pattern
+
+- **Each node follows the single responsibility principle**
+  - Write nodes as pure functions to improve testability
+  - State changes are performed only through explicit return values
+  - Decompose complex logic into multiple nodes
+
+```python
+def retrieve_node(state: GraphState) -> dict:
+    """Document retrieval node"""
+    question = state["question"]
+    documents = retriever.invoke(question)
+    return {"documents": documents}
+```
+
+### 3. Edge Management Strategy
+
+- **Use explicit edges for deterministic flows**
+  - Use conditional_edges for dynamic routing
+  - Routing functions make clear decisions based on state
+  - Prevent circular references and set clear termination conditions
+
+```python
+workflow.add_conditional_edges(
+    START,
+    route_question,
+    {
+        "web_search": "web_search_node",
+        "vectorstore": "retrieve_node",
+    }
+)
+```
+
+### 4. Error Handling & Resilience
+
+- **Implement exception handling in each node**
+  - Include retry logic and fallback mechanisms
+  - Ensure data integrity through state validation
+  - Support failure recovery with checkpointing
+
+```python
+def resilient_node(state: GraphState) -> dict:
+    try:
+        # Validate state
+        validate_state(state)
+        
+        # Business logic
+        result = perform_task(state)
+        
+        return {"results": [result]}
+    except Exception as e:
+        return {"errors": [str(e)]}
+```
+
+## Key Workflow Patterns
+
+### 1. Adaptive RAG Pattern
+
+Dynamically selects between web search and vector store based on query type.
+
+```python
+# State definition
+class GraphState(TypedDict):
+    question: Annotated[str, "User question"]
+    generation: Annotated[str, "LLM generated answer"]
+    documents: Annotated[List[str], "List of documents"]
+
+# Routing logic
+def route_question(state: GraphState):
+    """Route question to web search or vectorstore"""
+    question = state["question"]
+    source = question_router.invoke({"question": question})
+    
+    if source.datasource == "web_search":
+        return "web_search"
+    elif source.datasource == "vectorstore":
+        return "vectorstore"
+
+# Graph construction
+workflow = StateGraph(GraphState)
+workflow.add_node("web_search", web_search)
+workflow.add_node("retrieve", retrieve)
+workflow.add_node("grade_documents", grade_documents)
+workflow.add_node("generate", generate)
+```
+
+### 2. Plan-and-Execute Pattern
+
+Plans and executes complex tasks step by step.
+
+```python
+class PlanExecute(TypedDict):
+    input: Annotated[str, "User's input"]
+    plan: Annotated[List[str], "Current plan"]
+    past_steps: Annotated[List[Tuple], operator.add]
+    response: Annotated[str, "Final response"]
+
+def plan_step(state: PlanExecute):
+    plan = planner.invoke({"messages": [("user", state["input"])]})
+    return {"plan": plan.steps}
+
+def execute_step(state: PlanExecute):
+    task = state["plan"][0]
+    agent_response = agent_executor.invoke({"messages": [("user", task)]})
+    return {"past_steps": [(task, agent_response["messages"][-1].content)]}
+```
+
+### 3. Multi-Agent Collaboration Pattern
+
+Multiple specialized agents collaborate to perform tasks.
+
+```python
+class AgentFactory:
+    def create_agent_node(self, agent, name: str):
+        def agent_node(state):
+            result = agent.invoke(state)
+            return {
+                "messages": [
+                    HumanMessage(content=result["messages"][-1].content, name=name)
+                ]
+            }
+        return agent_node
+
+# Research Agent node
+research_agent = create_react_agent(llm, tools=[tavily_tool])
+research_node = agent_factory.create_agent_node(research_agent, "researcher")
+```
+
+### 4. Hierarchical Team Pattern
+
+Hierarchical structure where Supervisor manages multiple teams.
+
+```python
+def create_team_supervisor(model_name, system_prompt, members):
+    options_for_next = ["FINISH"] + members
+    
+    class RouteResponse(BaseModel):
+        next: Literal[*options_for_next]
+    
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        MessagesPlaceholder(variable_name="messages"),
+        ("system", "Given the conversation above, who should act next?")
+    ])
+    
+    return prompt | llm.with_structured_output(RouteResponse)
+```
+
+## Implementation Guidelines
+
+### 1. State Design Principles
+
+```python
+# Base State
+class WorkflowState(TypedDict):
+    # Required fields
+    messages: Annotated[List[BaseMessage], add_messages]
+    current_step: str
+    
+    # Aggregated fields (using operator.add)
+    results: Annotated[List[dict], operator.add]
+    errors: Annotated[List[str], operator.add]
+    
+    # Optional fields
+    metadata: Optional[dict]
+    context: Optional[dict]
+```
+
+### 2. Node Implementation Best Practices
+
+```python
+# Basic node pattern
+def process_node(state: WorkflowState) -> dict:
+    """Receive state and return only fields to update"""
+    try:
+        # 1. State validation
+        validate_state(state)
+        
+        # 2. Business logic
+        result = perform_task(state)
+        
+        # 3. Return partial state update
+        return {
+            "results": [result],
+            "current_step": "next_step"
+        }
+    except Exception as e:
+        return {
+            "errors": [str(e)],
+            "current_step": "error_handler"
+        }
+```
+
+### 3. Conditional Edge Patterns
+
+```python
+# Simple routing
+def route_by_score(state):
+    score = state.get("score", 0)
+    if score > 0.8:
+        return "high_confidence"
+    elif score > 0.5:
+        return "medium_confidence"
+    else:
+        return "low_confidence"
+
+# Multi-condition routing
+def complex_routing(state):
+    if state["retry_count"] > 3:
+        return "error_handler"
+    elif state["documents"]:
+        return "generate_response"
+    else:
+        return "fallback_search"
+```
+
+## Best Practices
+
+### 1. **Always define clear state schemas**
+   - Use TypedDict for type safety
+   - Document each field with Annotated
+   - Validate state at node boundaries
+
+### 2. **Keep nodes simple and focused**
+   - Single responsibility per node
+   - Pure functions when possible
+   - Clear input/output contracts
+
+### 3. **Handle errors gracefully**
+   - Try-catch in every node
+   - Meaningful error messages
+   - Fallback strategies
+
+### 4. **Use structured outputs**
+   - Pydantic models for LLM outputs
+   - Consistent data formats
+   - Validation at boundaries
+
+### 5. **Implement proper logging**
+   - Log state transitions
+   - Track execution paths
+   - Monitor performance metrics
+

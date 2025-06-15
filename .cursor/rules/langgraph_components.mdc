@@ -1,0 +1,385 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# LangGraph Components Library
+
+A library of frequently used reusable components in LangGraph workflows.
+
+## LLM Chains
+
+### 1. Basic LLM Chain
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# Basic chain
+llm = ChatOpenAI(model="gpt-4o", temperature=0)
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant."),
+    ("human", "{input}")
+])
+chain = prompt | llm | StrOutputParser()
+```
+
+### 2. Structured Output Chain
+
+```python
+from pydantic import BaseModel, Field
+from typing import List, Literal
+
+class Plan(BaseModel):
+    """Task plan"""
+    steps: List[str] = Field(description="Steps to execute")
+    
+class RouteQuery(BaseModel):
+    """Query routing"""
+    datasource: Literal["vectorstore", "web_search"]
+
+# Structured output
+structured_llm = llm.with_structured_output(Plan)
+router = llm.with_structured_output(RouteQuery)
+
+# Combine with prompt
+planner = prompt | structured_llm
+question_router = route_prompt | router
+```
+
+### 3. Function Calling Chain
+
+```python
+from langchain_core.tools import tool
+
+@tool
+def calculate(expression: str) -> str:
+    """Calculate mathematical expression"""
+    return str(eval(expression))
+
+# Function calling setup
+llm_with_tools = llm.bind_tools([calculate])
+chain_with_tools = prompt | llm_with_tools
+```
+
+### 4. Streaming Chain
+
+```python
+# Streaming support
+async def stream_chain(question: str):
+    async for chunk in chain.astream({"input": question}):
+        yield chunk
+```
+
+## Retrievers
+
+### 1. Vector Store Retriever
+
+```python
+from langchain_openai import OpenAIEmbeddings
+from langchain_chroma import Chroma
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# Create vector store
+embeddings = OpenAIEmbeddings()
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200
+)
+
+# Split and store documents
+splits = text_splitter.split_documents(documents)
+vectorstore = Chroma.from_documents(
+    documents=splits,
+    embedding=embeddings
+)
+
+# Create retriever
+retriever = vectorstore.as_retriever(
+    search_type="similarity",
+    search_kwargs={"k": 4}
+)
+```
+
+### 2. Multi-Query Retriever
+
+```python
+from langchain.retrievers.multi_query import MultiQueryRetriever
+
+# Query generation prompt
+query_prompt = ChatPromptTemplate.from_messages([
+    ("system", "Generate 3 different versions of the given question to retrieve relevant documents."),
+    ("human", "{question}")
+])
+
+# Multi-query retriever
+multi_query_retriever = MultiQueryRetriever.from_llm(
+    retriever=retriever,
+    llm=llm,
+    prompt=query_prompt
+)
+```
+
+### 3. Contextual Compression Retriever
+
+```python
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
+
+# Create compressor
+compressor = LLMChainExtractor.from_llm(llm)
+
+# Compression retriever
+compression_retriever = ContextualCompressionRetriever(
+    base_compressor=compressor,
+    base_retriever=retriever
+)
+```
+
+### 4. Ensemble Retriever
+
+```python
+from langchain.retrievers import EnsembleRetriever
+from langchain_community.retrievers import BM25Retriever
+
+# BM25 retriever
+bm25_retriever = BM25Retriever.from_documents(documents)
+bm25_retriever.k = 2
+
+# Ensemble retriever (BM25 + Vector)
+ensemble_retriever = EnsembleRetriever(
+    retrievers=[bm25_retriever, retriever],
+    weights=[0.5, 0.5]
+)
+```
+
+### 5. Parent Document Retriever
+
+```python
+from langchain.retrievers import ParentDocumentRetriever
+from langchain.storage import InMemoryStore
+
+# Parent document store
+parent_store = InMemoryStore()
+
+# Parent document retriever
+parent_retriever = ParentDocumentRetriever(
+    vectorstore=vectorstore,
+    docstore=parent_store,
+    child_splitter=RecursiveCharacterTextSplitter(chunk_size=400),
+    parent_splitter=RecursiveCharacterTextSplitter(chunk_size=2000)
+)
+```
+
+## Rerankers
+
+### 1. Cross-Encoder Reranker
+
+```python
+from sentence_transformers import CrossEncoder
+
+class CrossEncoderReranker:
+    def __init__(self, model_name="cross-encoder/ms-marco-MiniLM-L-6-v2"):
+        self.model = CrossEncoder(model_name)
+    
+    def rerank(self, query: str, documents: List[Document], top_k: int = 5):
+        # Calculate scores
+        pairs = [[query, doc.page_content] for doc in documents]
+        scores = self.model.predict(pairs)
+        
+        # Sort
+        doc_scores = list(zip(documents, scores))
+        doc_scores.sort(key=lambda x: x[1], reverse=True)
+        
+        return [doc for doc, _ in doc_scores[:top_k]]
+```
+
+### 2. Cohere Reranker
+
+```python
+import cohere
+
+class CohereReranker:
+    def __init__(self, api_key: str):
+        self.co = cohere.Client(api_key)
+    
+    def rerank(self, query: str, documents: List[Document], top_k: int = 5):
+        docs_text = [doc.page_content for doc in documents]
+        
+        results = self.co.rerank(
+            model="rerank-english-v2.0",
+            query=query,
+            documents=docs_text,
+            top_n=top_k
+        )
+        
+        return [documents[r.index] for r in results]
+```
+
+### 3. BGE Reranker
+
+```python
+from FlagEmbedding import FlagReranker
+
+class BGEReranker:
+    def __init__(self, model_name="BAAI/bge-reranker-large"):
+        self.reranker = FlagReranker(model_name)
+    
+    def rerank(self, query: str, documents: List[Document], top_k: int = 5):
+        pairs = [[query, doc.page_content] for doc in documents]
+        scores = self.reranker.compute_score(pairs)
+        
+        doc_scores = list(zip(documents, scores))
+        doc_scores.sort(key=lambda x: x[1], reverse=True)
+        
+        return [doc for doc, _ in doc_scores[:top_k]]
+```
+
+### 4. LLM-based Reranker
+
+```python
+class LLMReranker:
+    def __init__(self, llm):
+        self.llm = llm
+        
+    def rerank(self, query: str, documents: List[Document], top_k: int = 5):
+        # Relevance evaluation prompt
+        eval_prompt = ChatPromptTemplate.from_template(
+            """Rate the relevance of the document to the query on a scale of 1-10.
+            Query: {query}
+            Document: {document}
+            
+            Output only the numeric score."""
+        )
+        
+        scores = []
+        for doc in documents:
+            score = self.llm.invoke(eval_prompt.format(query=query, document=doc.page_content))
+            scores.append((doc, float(score)))
+        
+        scores.sort(key=lambda x: x[1], reverse=True)
+        return [doc for doc, _ in scores[:top_k]]
+```
+
+## Agents
+
+### 1. ReAct Agent
+
+```python
+from langchain.agents import create_react_agent
+
+def create_react_agent_node(tools, llm, system_prompt):
+    """Create ReAct agent node"""
+    agent = create_react_agent(llm, tools)
+    
+    def agent_node(state):
+        result = agent.invoke({
+            "input": state["question"],
+            "chat_history": state.get("messages", [])
+        })
+        return {"messages": [result]}
+    
+    return agent_node
+```
+
+### 2. Structured Agent
+
+```python
+from langchain.agents import AgentExecutor
+from langchain_core.agents import AgentAction, AgentFinish
+
+class StructuredAgent:
+    def __init__(self, llm, tools):
+        self.llm = llm
+        self.tools = {tool.name: tool for tool in tools}
+    
+    def invoke(self, state):
+        # Decision making
+        action = self.llm.with_structured_output(AgentAction).invoke(state)
+        
+        if isinstance(action, AgentFinish):
+            return {"output": action.return_values}
+        
+        # Tool execution
+        tool = self.tools[action.tool]
+        result = tool.invoke(action.tool_input)
+        
+        return {"intermediate_steps": [(action, result)]}
+```
+
+## Prompts
+
+### 1. Router Prompt
+
+```python
+router_prompt = ChatPromptTemplate.from_template("""
+You are an expert at routing user questions to the appropriate data source.
+You have access to a vectorstore and web search.
+
+The vectorstore contains documents about {domain}.
+Use the vectorstore for questions about {domain}.
+Use web search for current events or questions outside {domain}.
+
+Question: {question}
+
+Return either 'vectorstore' or 'web_search'.
+""")
+```
+
+### 2. RAG Prompt
+
+```python
+rag_prompt = ChatPromptTemplate.from_template("""
+You are an assistant for question-answering tasks.
+Use the following pieces of retrieved context to answer the question.
+If you don't know the answer, just say that you don't know.
+Use three sentences maximum and keep the answer concise.
+
+Question: {question}
+Context: {context}
+Answer:
+""")
+```
+
+### 3. Grader Prompt
+
+```python
+grader_prompt = ChatPromptTemplate.from_template("""
+You are a grader assessing relevance of a retrieved document to a user question.
+If the document contains keywords related to the question, grade it as relevant.
+Give a binary score 'yes' or 'no' to indicate whether the document is relevant.
+
+Question: {question}
+Document: {document}
+Relevant:
+""")
+```
+
+## Best Practices
+
+### 1. **Component Reusability**
+   - Create factory functions for components
+   - Use configuration objects for customization
+   - Implement clear interfaces
+
+### 2. **Error Handling**
+   - Wrap components in try-catch blocks
+   - Provide meaningful error messages
+   - Implement fallback mechanisms
+
+### 3. **Performance Optimization**
+   - Cache expensive operations
+   - Use streaming for real-time responses
+   - Implement connection pooling
+
+### 4. **Testing Strategy**
+   - Unit test individual components
+   - Integration test component combinations
+   - Mock external dependencies
+
+### 5. **Documentation**
+   - Document component parameters
+   - Provide usage examples
+   - Maintain version compatibility
+
